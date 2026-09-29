@@ -83,7 +83,9 @@ def doctor(root, config_path=None):
             available_encoders = set(re.findall(r'^\s*[A-Z.]{6}\s+(\S+)', encoders, re.M))
             available_filters = set(re.findall(r'^\s*[A-Z.]{3}\s+(\S+)', filters, re.M))
             required_encoders = {'libx264', 'ffv1', 'aac', 'pcm_s16le', 'pcm_f32le', 'mjpeg'}
-            required_filters = {'scale', 'crop', 'fps', 'concat', 'apad', 'amix', 'aresample', 'overlay', 'showinfo'}
+            required_filters = {'scale', 'crop', 'fps', 'concat', 'apad', 'amix', 'aresample', 'overlay', 'showinfo',
+                'setpts', 'asetpts', 'setsar', 'format', 'aformat', 'trim', 'atrim', 'anullsrc', 'volume',
+                'adelay', 'afade', 'fade', 'colorchannelmixer', 'highpass', 'lowpass', 'tile'}
             add('codecs', required_encoders <= available_encoders, {'missing': sorted(required_encoders - available_encoders)})
             add('filters', required_filters <= available_filters, {'missing': sorted(required_filters - available_filters)})
             for feature, names in [('titles', {'drawtext'}), ('burn_captions', {'subtitles'}),
@@ -168,6 +170,9 @@ def watch(root, config_path, once=False):
                         return health
                     time.sleep(config['poll_seconds'])
                 return health
+            except Exception:
+                logger.exception('Foreground watcher failed; inspect the task result and workspace permissions.')
+                raise
             finally:
                 health.update(status='stopped', heartbeat=utcnow())
                 write_json(state / 'watcher-health.json', health)

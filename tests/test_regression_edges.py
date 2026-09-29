@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace as NS
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / 'scripts'), str(ROOT / 'examples')]
@@ -63,6 +64,37 @@ class EdgeContracts(unittest.TestCase):
                 selected_cues({'segments': [segment]}, 0, 3, 0)
         timeline = NS(spec={'audio': {'voiceover_volume': 0}, 'captions': {'kind': 'narration'}})
         self.assertEqual(retime(timeline), [])
+
+    def test_doctor_fails_closed_for_missing_unsupported_and_unwritable_environments(self):
+        from pipeline.operations import doctor
+        from pipeline.media import run as real_run
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / 'config.json'
+            write_json(config, {'inbox_paths': ['inbox'], 'extensions': ['.mkv']})
+            with patch('pipeline.operations.tool', side_effect=PipelineError('missing_tool', 'ffmpeg', 'not installed')):
+                report = doctor(root, config)
+                self.assertFalse(report['ready'])
+                self.assertFalse(next(c for c in report['checks'] if c['name'] == 'ffmpeg')['ok'])
+            def unsupported(command, **kwargs):
+                if '-version' in command:
+                    return subprocess.CompletedProcess(command, 0, 'ffmpeg version 4.4 unsupported\n', '')
+                return real_run(command, **kwargs)
+            with patch('pipeline.operations.run', side_effect=unsupported):
+                self.assertFalse(doctor(root, config)['ready'])
+            real_temporary_file = tempfile.TemporaryFile
+            def readonly_workspace(*args, **kwargs):
+                if kwargs.get('dir') is not None and Path(kwargs['dir']).resolve() == root.resolve():
+                    raise PermissionError('readonly workspace')
+                return real_temporary_file(*args, **kwargs)
+            with patch('pipeline.operations.tempfile.TemporaryFile', side_effect=readonly_workspace):
+                report = doctor(root, config)
+                self.assertFalse(report['ready'])
+                self.assertFalse(next(c for c in report['checks'] if c['name'] == 'storage')['ok'])
+            with patch('pipeline.operations.shutil.disk_usage', return_value=NS(total=1000, used=999, free=1)):
+                self.assertFalse(doctor(root, config)['ready'])
+            config.write_text('not valid JSON', encoding='utf-8')
+            self.assertFalse(doctor(root, config)['ready'])
 
     def test_repository_deny_by_default_preserves_source_allowlist(self):
         with tempfile.TemporaryDirectory() as directory:

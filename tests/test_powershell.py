@@ -86,6 +86,33 @@ $ErrorActionPreference='Stop'
                 evidence = read_json(self.root / f'samples-{i}/index.json')
                 self.assertTrue(all(2.8 <= frame['timestamp'] < 3 for frame in evidence['frames']))
 
+    def test_metadata_atomic_publication_tolerates_real_windows_reader_lock(self):
+        import ctypes
+        from ctypes import wintypes
+        path = self.root / 'locked-metadata.json'
+        write_json(path, {'old': True})
+        script = self.root / 'write-metadata.py'
+        script.write_text('import sys\nfrom pathlib import Path\nsys.path.insert(0, ' + repr(str(ROOT / 'scripts')) + ')\nfrom pipeline.common import write_json\nwrite_json(Path(sys.argv[1]), {"replaced": True})\n', encoding='utf-8')
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                                      wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        kernel.CreateFileW.restype = wintypes.HANDLE
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        # This mimics a .NET reader: share read/write, but NOT delete/replace.
+        handle = kernel.CreateFileW(str(path), 0x80000000, 1 | 2, None, 3, 0, None)
+        self.assertNotEqual(handle, ctypes.c_void_p(-1).value)
+        child = None
+        try:
+            child = subprocess.Popen([sys.executable, str(script), str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            time.sleep(.4)
+            self.assertIsNone(child.poll(), 'The writer must retry, not fail or replace a reader-locked file.')
+            self.assertEqual(read_json(path), {'old': True})
+        finally:
+            kernel.CloseHandle(handle)
+        out, err = child.communicate(timeout=10)
+        self.assertEqual(child.returncode, 0, out.decode() + err.decode())
+        self.assertEqual(read_json(path), {'replaced': True})
+
     def test_ingest_resume_wrappers_on_both_shells(self):
         for i, shell in enumerate(self.shells):
             with self.subTest(shell=shell):

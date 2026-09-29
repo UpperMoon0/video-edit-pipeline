@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -69,6 +70,26 @@ def reject_alias(output, inputs):
             raise PipelineError('input_output_alias', 'output', f'Output aliases input: {source}', 'Choose a distinct output file.')
 
 
+def replace_metadata(source, destination, timeout=3):
+    """Tolerate short Windows reader locks without making a partial JSON visible.
+
+    PowerShell/.NET readers can omit FILE_SHARE_DELETE, temporarily preventing
+    os.replace. Retry only recognized Windows sharing/access errors; permanent
+    failures remain bounded and the old metadata is preserved.
+    """
+    deadline = time.monotonic() + timeout
+    delay = .01
+    while True:
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError as exc:
+            if getattr(exc, 'winerror', None) not in (5, 32, 33) or time.monotonic() >= deadline:
+                raise
+            time.sleep(delay)
+            delay = min(delay * 2, .1)
+
+
 def atomic_write(path, data):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -78,7 +99,7 @@ def atomic_write(path, data):
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(name, path)
+        replace_metadata(name, path)
     finally:
         Path(name).unlink(missing_ok=True)
 
