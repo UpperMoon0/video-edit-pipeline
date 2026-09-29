@@ -38,10 +38,13 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
 
-def file_hash(path):
+def file_hash(path, cancel=None):
     sha = hashlib.sha256()
     with Path(path).open('rb') as stream:
         while block := stream.read(4 * 1024 * 1024):
+            if cancel is not None:
+                from .media import check_cancel
+                check_cancel(cancel)
             sha.update(block)
     return sha.hexdigest()
 

@@ -1,10 +1,12 @@
-"""FFmpeg execution and probing; cancellation is cooperative between stages."""
+"""Bounded FFmpeg execution with responsive cancellation of the owned child."""
 from __future__ import annotations
 import json
 import math
 import os
 import shutil
 import subprocess
+import tempfile
+import time
 from fractions import Fraction
 from pathlib import Path
 from .common import PipelineError
@@ -42,15 +44,38 @@ def check_command(command):
 def run(command, *, cwd=None, cancel=None, timeout=1800):
     check_command(command)
     check_cancel(cancel)
-    try:
-        result = subprocess.run(command, cwd=cwd, capture_output=True, text=True,
-            encoding='utf-8', errors='replace', check=True, timeout=timeout, stdin=subprocess.DEVNULL)
-    except subprocess.CalledProcessError as exc:
-        raise PipelineError('process_failed', command[0], exc.stderr[-12000:], f'Exit {exc.returncode}; prior outputs were preserved.') from exc
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise PipelineError('process_error', command[0], str(exc), 'Run doctor and check paths/time limits.') from exc
-    check_cancel(cancel)
-    return result
+    # Only the child created here is controlled. No unrelated PID is signalled.
+    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+        try:
+            child = subprocess.Popen(command, cwd=cwd, stdout=stdout, stderr=stderr, stdin=subprocess.DEVNULL)
+        except OSError as exc:
+            raise PipelineError('process_start', command[0], str(exc)) from exc
+        try:
+            deadline = time.monotonic() + timeout
+            while child.poll() is None:
+                check_cancel(cancel)
+                if time.monotonic() >= deadline:
+                    raise PipelineError('process_timeout', command[0], 'The media operation exceeded its time limit.')
+                time.sleep(.1)
+        except BaseException:
+            child.terminate()
+            try:
+                child.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait()
+            raise
+        def read(stream):
+            stream.seek(0, 2)
+            if stream.tell() > 16 * 1024 * 1024:
+                raise PipelineError('process_output_budget', command[0], 'Process diagnostics exceeded 16 MiB; output is not silently truncated.')
+            stream.seek(0)
+            return stream.read().decode('utf-8', errors='replace')
+        out, err = read(stdout), read(stderr)
+        if child.returncode:
+            raise PipelineError('process_failed', command[0], err[-12000:], f'Exit {child.returncode}; prior output was preserved.')
+        check_cancel(cancel)
+        return subprocess.CompletedProcess(command, child.returncode, out, err)
 
 
 def ffmpeg_args():

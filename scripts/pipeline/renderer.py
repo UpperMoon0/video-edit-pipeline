@@ -14,15 +14,17 @@ from .qa import inspect_output, require_pass
 from .captions import retime, as_srt
 
 
-def final_command(timeline, work, output):
+def final_command(timeline, work, output, write=False):
     command = ffmpeg_args() + ['-f', 'concat', '-safe', '0', '-i', str(work / 'cuts.ffconcat')]
     filters = []
-    video, index = add_video(timeline, command, filters, work)
+    video, index = add_video(timeline, command, filters, work, write=write)
     index = add_audio(timeline, command, filters, index)
     captions = timeline.spec.get('captions', {})
     subtitle_index = None
     if captions.get('mode') == 'burn':
-        raise PipelineError('unsupported_burn', 'captions.mode', 'Burn-in is not available in this revision; use sidecar or mux.')
+        style = 'FontName=' + captions.get('font', 'Arial') + ',FontSize=' + str(captions.get('size', 24))
+        filters.append(f"[{video}]subtitles=filename=captions.srt:force_style='{style}'[captioned]")
+        video = 'captioned'
     if captions.get('mode') == 'mux':
         command += ['-i', str(work / 'captions.srt')]
         subtitle_index = index
@@ -56,7 +58,7 @@ def render(timeline, *, cache_enabled=True, cache_bytes=1073741824, overwrite=Tr
     preflight(timeline)
     check_cancel(cancel)
     assets = timeline.assets() + ([timeline.path] if timeline.path else [])
-    identities = {str(p): file_hash(p) for p in assets}
+    identities = {str(p): file_hash(p, cancel) for p in assets}
     version = run([tool('ffmpeg'), '-version']).stdout.splitlines()[0]
     hits = 0
     output = timeline.output
@@ -90,18 +92,18 @@ def render(timeline, *, cache_enabled=True, cache_bytes=1073741824, overwrite=Tr
                 captions = None
                 if timeline.spec.get('captions'):
                     cues = retime(timeline)
-                    if not cues and timeline.spec['captions'].get('mode') == 'mux':
+                    if not cues and timeline.spec['captions'].get('mode') in ('mux', 'burn'):
                         raise PipelineError('empty_captions', 'captions', 'No selected audible transcript cues.')
                     captions = as_srt(cues)
                     (work / 'captions.srt').write_text(captions, encoding='utf-8')
-                command, graph = final_command(timeline, work, temp)
+                command, graph = final_command(timeline, work, temp, write=True)
                 (work / 'final.ffgraph').write_text(graph, encoding='utf-8')
                 run(command, cwd=work, cancel=cancel)
                 report = inspect_output(temp, timeline.fps, sum(timeline.frames), qa=timeline.spec.get('qa'),
                     loudness=timeline.spec['audio'].get('loudness'), cancel=cancel)
                 report.update(timeline_revision=timeline.spec['revision'], timeline=timeline.spec, sources=identities,
                     ffmpeg=version, created_at=utcnow(), cache_hits=hits, output=str(output))
-                if any(file_hash(Path(p)) != sha for p, sha in identities.items()):
+                if any(file_hash(Path(p), cancel) != sha for p, sha in identities.items()):
                     report['passed'] = False
                     report['errors'].append('An input changed during rendering.')
                 report_dir = output.parent / '.pipeline-reports'

@@ -49,3 +49,8 @@ __pycache__/
 *.jpg
 *.png
 *.sqlite*
+.pipeline-cache/
+.pipeline-reports/
+.pipeline-provenance/
+.timeline-history/
+sample-run-*/
