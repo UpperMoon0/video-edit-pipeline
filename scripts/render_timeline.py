@@ -26,7 +26,7 @@ def main() -> None:
 
     timeline_path = args.timeline.resolve()
     base = timeline_path.parent
-    spec = json.loads(timeline_path.read_text(encoding="utf-8"))
+    spec = json.loads(timeline_path.read_text(encoding="utf-8-sig"))
     width = int(spec.get("video", {}).get("width", 1920))
     height = int(spec.get("video", {}).get("height", 1080))
     fps = int(spec.get("video", {}).get("fps", 30))
