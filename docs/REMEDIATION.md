@@ -2,6 +2,8 @@
 
 PR scope: actionable issues #1–#20 and tracker #21. A changed code path or exit code alone is not completion evidence. The matrix below identifies the implementation and corresponding acceptance tests; current exact-head CI and workstation evidence belong in the PR, not a stale hard-coded green badge.
 
+Review #5351275447 found three defects at `6a92b22`: source mutation could poison the persistent cache (#20), legacy migration could skip reused pathnames (#3/#7), and splits/previews could alter mixed-rate picture selection (#16). The follow-up adds verified private source snapshots, provenance-gated migration with distinct historical identities, and resampling before source-time cuts. `tests/test_review_regressions.py` exercises those exact scenarios with real media. These changes require fresh validation and re-review; the earlier green matrix did not establish completion of these acceptance criteria.
+
 | Issue | Remediation | Evidence |
 |---|---|---|
 | #1 BOM JSON | Shared UTF-8-SIG readers and no-BOM writers | Contract BOM test; actual PS5.1/7 Unicode-to-Python tests |

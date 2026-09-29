@@ -1,6 +1,7 @@
 """Optimistic, reversible timeline edits on one rational frame grid."""
 import copy
 import uuid
+from fractions import Fraction
 from pathlib import Path
 from .common import FileLock, PipelineError, read_json, write_json, file_hash, digest
 from .timeline import load_timeline, normalize, frame_count, rate
@@ -71,7 +72,8 @@ def apply_operation(timeline, operation):
             duration = float(frames / timeline.fps)
             right = copy.deepcopy(clip)
             right['id'] = clip['id'] + '-split-' + uuid.uuid4().hex[:8]
-            right['in'] += duration if clip['type'] == 'video' else 0
+            if clip['type'] == 'video':
+                right['in'] = float(Fraction(str(clip['in'])) + frames / timeline.fps)
             right['duration'] -= duration
             clip['duration'] = duration
             spec['clips'].insert(index + 1, right)

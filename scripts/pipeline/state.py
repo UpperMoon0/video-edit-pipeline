@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import sqlite3
 import uuid
 from pathlib import Path
-from .common import FileLock, PipelineError, read_json, utcnow, digest
+from .common import FileLock, PipelineError, read_json, utcnow, digest, file_hash
 
 
 class JobStore:
@@ -57,13 +57,25 @@ class JobStore:
             now = entry.get('ingested_at') or utcnow()
             manifest = read_json(job / 'manifest.json') if (job / 'manifest.json').exists() else {}
             key = digest({'legacy_job': str(job)})
-            if original and Path(original).is_file():
+            expected = manifest.get('sha256')
+            if original and Path(original).is_file() and expected:
                 from .jobs import source_identity
-                key = source_identity(Path(original))[0]
+                current = Path(original)
+                candidate = source_identity(current)[0]
+                # A reused pathname is not historical identity. Only a stable
+                # full-hash match can claim today's source key; duplicate old
+                # jobs retain separate historical keys instead of disappearing.
+                if (file_hash(current).lower() == expected.lower()
+                        and source_identity(current)[0] == candidate
+                        and not db.execute('SELECT 1 FROM jobs WHERE source_key=?', (candidate,)).fetchone()):
+                    key = candidate
+            identifier = manifest.get('job_id', job.name)
+            if db.execute('SELECT 1 FROM jobs WHERE id=?', (identifier,)).fetchone():
+                identifier = digest({'legacy_job_id': str(job)})
             db.execute('''INSERT OR IGNORE INTO jobs
                 (id,source_key,original_path,job_path,created_at,updated_at,status,stage,prepared_at)
                 VALUES (?,?,?,?,?,?,?,?,?)''',
-                (manifest.get('job_id', job.name), key, original, str(job), manifest.get('created_at', now),
+                (identifier, key, original, str(job), manifest.get('created_at', now),
                  now, 'ready' if (job / 'READY.txt').is_file() else 'failed', 'legacy-import', now))
 
     def reserve(self, key, original, job=None):

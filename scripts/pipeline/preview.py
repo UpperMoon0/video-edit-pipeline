@@ -2,6 +2,7 @@
 import copy
 import math
 import uuid
+from fractions import Fraction
 from pathlib import Path
 from .common import PipelineError, same_file
 from .timeline import load_timeline, normalize, frame_count
@@ -25,7 +26,7 @@ def preview_timeline(timeline, start, end, output, max_seconds=30):
         lo, hi = max(first, offset), min(last, offset + frames)
         if hi > lo:
             if clip['type'] == 'video':
-                clip['in'] += float((lo - offset) / timeline.fps)
+                clip['in'] = float(Fraction(str(clip['in'])) + (lo - offset) / timeline.fps)
             clip['duration'] = float((hi - lo) / timeline.fps)
             clips.append(clip)
         offset += frames

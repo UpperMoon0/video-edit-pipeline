@@ -31,6 +31,8 @@ Direct dependencies are pinned in the requirements files. Core CI validates the 
 
 ## Extending coverage
 
+`test_review_regressions.py` adds the review's change/fail/restore/rerender cache sequence with decoded red/green picture and 440/880 Hz audio checks, mutation-and-restoration during the real encoder call, legacy pathname reuse and duplicate historical jobs, and every-frame split/preview color equivalence for 24 fps, 2 fps, and VFR footage on a 30 fps timeline (including a non-grid source in). Only mutation timing is hooked; FFmpeg, hashes, SQLite, and publication are real.
+
 Preserve failing-case tests when fixing bugs. An accepted source range must also produce the required decoded frames. A valid output file must still have the correct streams, audio duration, and late-track energy. A failed render must preserve both source hashes and the previous deliverable. A registry test must use independent processes when testing interprocess ownership; an in-memory mock cannot prove it.
 
 Long simultaneous overlay/audio commands have an explicit precompose/shorter-path failure policy; the scalable-cut test does not claim unbounded simultaneous tracks or unbounded disk usage. Scene detection is tested against known luminance changes, not claimed as general video understanding. Preview timing is checked, but stateful compressor history and different preview encoding settings prevent a general bit-identity claim. No native editor interchange format is declared implemented.
