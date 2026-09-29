@@ -1,0 +1,21 @@
+{
+  "inbox_paths": [
+    "C:\\Media\\Inbox"
+  ],
+  "extensions": [
+    ".mp4",
+    ".mov",
+    ".mkv",
+    ".avi",
+    ".webm",
+    ".m4v",
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".aac",
+    ".flac"
+  ],
+  "poll_seconds": 5,
+  "stable_seconds": 10,
+  "contact_sheet_frames": 16
+}

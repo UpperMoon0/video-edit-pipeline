@@ -1,0 +1,22 @@
+# Only reviewed pipeline source and setup files belong in this public repository.
+/*
+!/.gitignore
+!/README.md
+!/config.example.json
+!/requirements.txt
+!/scripts/
+/scripts/*
+!/scripts/MediaPipeline.ps1
+!/scripts/Install-Watcher.ps1
+!/scripts/Sample-Video.ps1
+!/scripts/transcribe.py
+!/scripts/render_timeline.py
+!/scripts/generate_tts.py
+!/scripts/generate_cinematic_sfx.py
+
+# Local settings, credentials, and generated files must remain private.
+.env
+.env.*
+config.json
+__pycache__/
+*.pyc
