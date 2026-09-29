@@ -160,7 +160,7 @@ class Contracts(unittest.TestCase):
         path = self.root / 'config.json'
         config = {'inbox_paths': ['inbox'], 'extensions': ['.mp4']}
         write_json(path, config)
-        self.assertEqual(config_read(path)['inbox_paths'], [str(self.root / 'inbox')])
+        self.assertEqual(config_read(path)['inbox_paths'], [str((self.root / 'inbox').resolve())])
         for key, value in [('poll_seconds', 0), ('stable_seconds', -1), ('contact_sheet_frames', 0), ('max_attempts', True), ('extensions', ['mp4'])]:
             with self.subTest(key=key):
                 write_json(path, {**config, key: value})

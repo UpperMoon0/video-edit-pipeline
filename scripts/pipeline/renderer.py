@@ -30,7 +30,7 @@ def final_command(timeline, work, output, write=False, measurement=None):
         subtitle_index = index
     command += ['-filter_complex_script', str(work / 'final.ffgraph'), '-map', f'[{video}]', '-map', '[outa]']
     if subtitle_index is not None:
-        command += ['-map', f'{subtitle_index}:s:0', '-c:s', 'srt' if timeline.output.suffix == '.mkv' else 'mov_text']
+        command += ['-map', f'{subtitle_index}:s:0', '-c:s', 'srt' if timeline.output.suffix.lower() == '.mkv' else 'mov_text']
     encode = timeline.spec.get('encode', {})
     command += ['-c:v', 'libx264', '-preset', encode.get('preset', 'medium'), '-crf', str(encode.get('crf', 18)),
         '-threads', '1', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-r', str(timeline.fps), '-t', f'{timeline.duration:.9f}']
@@ -49,13 +49,22 @@ def command_plan(timeline):
         command, graph = clip_command(timeline, clip, frames, work / f'cut-{i}.mkv', work / f'cut-{i}.ffgraph')
         commands.append(command)
         graphs.append(graph)
-    command, graph = final_command(timeline, work, timeline.output)
+    measurement = None
+    if timeline.spec['audio'].get('loudness'):
+        from .loudness import analysis_plan
+        command, graph = analysis_plan(timeline, work)
+        commands.append(command)
+        graphs.append(graph)
+        measurement = {key: '{measured-at-runtime}' for key in ('measured_I', 'measured_LRA', 'measured_TP', 'measured_thresh', 'offset')}
+    command, graph = final_command(timeline, work, timeline.output, measurement=measurement)
     return {'version': 1, 'mode': 'command-inspection', 'duration': timeline.duration, 'frames': sum(timeline.frames),
         'commands': commands + [command], 'filter_graphs': graphs + [graph], 'writes_performed': False}
 
 
 def render(timeline, *, cache_enabled=True, cache_bytes=1073741824, overwrite=True, cancel=None):
     preflight(timeline)
+    # Inspect final command budgets/fonts before any media output/cache is created.
+    command_plan(timeline)
     check_cancel(cancel)
     assets = timeline.assets() + ([timeline.path] if timeline.path else [])
     identities = {str(p): file_hash(p, cancel) for p in assets}

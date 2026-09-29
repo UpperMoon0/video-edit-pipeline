@@ -145,7 +145,9 @@ def output_transaction(output, inputs=(), overwrite=True):
             yield temp  # caller must finish validation before returning here
             if not temp.is_file() or not temp.stat().st_size:
                 raise PipelineError('empty_output', 'output', 'No usable output was produced.')
-            with temp.open('rb') as stream:
+            # Windows _commit/FlushFileBuffers requires a writable handle.
+            # This is our owned temporary output, never a source input.
+            with temp.open('r+b') as stream:
                 os.fsync(stream.fileno())
             reject_alias(output, inputs)
             os.replace(temp, output)

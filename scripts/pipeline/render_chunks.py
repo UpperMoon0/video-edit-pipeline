@@ -1,6 +1,6 @@
 """Bounded per-cut rendering; cached intermediates contain no global effects."""
 from pathlib import Path
-from .common import digest, read_json, write_json, output_transaction, PipelineError
+from .common import file_hash, digest, read_json, write_json, output_transaction, PipelineError
 from .media import ffmpeg_args, run, check_command
 from .qa import inspect_output, require_pass
 
@@ -39,13 +39,16 @@ def prepare_chunk(timeline, clip, frames, cache, work, identities, version, canc
     # IDs, captions, and global audio/graphics do not affect this intermediate.
     properties = {k: clip[k] for k in ('type', 'in', 'duration', 'audio')}
     properties['zoom'] = clip.get('zoom', 1)
-    key = digest({'format': 1, 'source': identities[str(timeline.asset(clip['source']))],
+    implementation = digest({name: file_hash(Path(__file__).with_name(name)) for name in ('render_chunks.py', 'qa.py', 'media.py', 'timeline.py')})
+    key = digest({'format': 2, 'implementation': implementation, 'source': identities[str(timeline.asset(clip['source']))],
         'cut': properties, 'video': timeline.spec['video'], 'ffmpeg': version})
     output, receipt = cache / (key + '.mkv'), cache / (key + '.json')
     if output.is_file() and receipt.is_file():
-        from .common import file_hash
-        record = read_json(receipt)
-        if record.get('output_sha256') == file_hash(output) and record.get('passed'):
+        try:
+            record = read_json(receipt)
+        except PipelineError:
+            record = {}  # An incomplete owned receipt is a cache miss, not a deliverable.
+        if isinstance(record, dict) and record.get('output_sha256') == file_hash(output, cancel) and record.get('passed'):
             output.touch()
             return output, True
     graph_path = work / (key + '.ffgraph')
