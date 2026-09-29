@@ -38,7 +38,9 @@ function Show-WatcherStatus {
 }
 if ($Action -eq 'Status') { Show-WatcherStatus; return }
 if ($Action -eq 'Stop') {
-    if ($task -and $task.State -eq 'Running') {
+    # Scheduler state may lag a live child/health update. Always signal the
+    # proven owned workspace when its task exists; never gate shutdown on it.
+    if ($task) {
         [IO.File]::WriteAllText((Join-Path $state 'watcher-stop.request'), 'stop', [Text.UTF8Encoding]::new($false))
         [ordered]@{ version=1; task_name=$TaskName; status='stop-requested' } | ConvertTo-Json
     } else { Show-WatcherStatus }

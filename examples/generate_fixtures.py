@@ -2,14 +2,17 @@
 """Generate synthetic public examples, never download or inspect personal media."""
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 
 
 def generate(root):
     root = Path(root).resolve()
+    if root.exists() and any(root.iterdir()):
+        raise FileExistsError('Fixture generation requires a new or empty directory; existing files are never overwritten.')
     root.mkdir(parents=True, exist_ok=True)
-    common = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-threads', '1', '-filter_threads', '1']
+    common = [os.environ.get('PIPELINE_FFMPEG', 'ffmpeg'), '-hide_banner', '-loglevel', 'error', '-y', '-threads', '1', '-filter_threads', '1']
     for color, frequency in [('red', 440), ('green', 880)]:
         subprocess.run(common + ['-f', 'lavfi', '-i', f'color=c={color}:s=160x96:r=30:d=3',
             '-f', 'lavfi', '-i', f'sine=frequency={frequency}:sample_rate=48000:duration=3',

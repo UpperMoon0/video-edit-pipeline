@@ -117,13 +117,36 @@ class JobStore:
             rows = db.execute(sql, ([status] if status else []) + [limit, offset]).fetchall()
         return [self.decode(row) for row in rows]
 
+    @staticmethod
+    def prepared_artifacts(row):
+        job = Path(row['job_path'])
+        if not all((job / name).is_file() for name in ('READY.txt', 'manifest.json', 'analysis/probe.json')):
+            return False
+        try:
+            manifest = read_json(job / 'manifest.json')
+            info = read_json(job / 'analysis/probe.json')
+            clone = (job / manifest['clone_path']).resolve() if manifest.get('clone_path') else None
+            if clone is None or not clone.is_file() or not clone.is_relative_to((job / 'source').resolve()):
+                return False
+            if manifest.get('version', 1) >= 2:
+                kinds = {stream['codec_type'] for stream in info['streams']}
+                if not kinds or manifest.get('preparation_status') != 'complete':
+                    return False
+                if 'audio' in kinds and not (job / 'analysis/voiceover.wav').is_file():
+                    return False
+                if 'video' in kinds and not all((job / name).is_file() for name in ('edit/timeline.json', 'analysis/contact-sheet.jpg', 'analysis/samples/index.json')):
+                    return False
+            return True
+        except (PipelineError, KeyError, TypeError, ValueError):
+            return False
+
     def latest_ready(self):
         with self.connect() as db:
             rows = db.execute("SELECT * FROM jobs WHERE status='ready' ORDER BY prepared_at DESC,id").fetchall()
         for row in rows:
             record = self.decode(row)
             job = Path(record['job_path'])
-            if (job / 'READY.txt').is_file() and (job / 'manifest.json').is_file() and (job / 'analysis/probe.json').is_file():
+            if self.prepared_artifacts(record):
                 return record
             self.update(record['id'], status='stale', stage='missing-artifact',
                 error={'code': 'missing_artifact', 'message': 'Prepared job artifacts are missing; explicitly retry/resume.'})

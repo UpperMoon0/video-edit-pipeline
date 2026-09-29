@@ -182,7 +182,7 @@ def run_job(store, row, config, *, source=None, resume=False, original_override=
         with FileLock(job.with_name('.' + job.name + '.job.lock'), timeout=30):
             row = store.get(row['id'])
             if row['status'] == 'ready' and not resume and not force:
-                if (job / 'READY.txt').is_file() and (job / 'manifest.json').is_file() and (job / 'analysis/probe.json').is_file():
+                if store.prepared_artifacts(row):
                     return row
                 return store.update(row['id'], status='stale', stage='missing-artifact',
                     error={'code': 'missing_artifact', 'message': 'Prepared job is missing artifacts; retry explicitly.'})

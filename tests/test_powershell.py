@@ -137,6 +137,8 @@ $ErrorActionPreference='Stop'
             self.assertTrue(json.loads(result.stdout)['installed'])
             result = self.ps(shell, script, *args, '-Action', 'Stop')
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(json.loads(result.stdout)['status'], 'stop-requested', result.stdout)
+            self.assertTrue((workspace / 'state/watcher-stop.request').is_file())
             deadline = time.monotonic() + 15
             while time.monotonic() < deadline:
                 health = read_json(workspace / 'state/watcher-health.json')
