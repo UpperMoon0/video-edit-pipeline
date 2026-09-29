@@ -14,11 +14,11 @@ from .qa import inspect_output, require_pass
 from .captions import retime, as_srt
 
 
-def final_command(timeline, work, output, write=False):
+def final_command(timeline, work, output, write=False, measurement=None):
     command = ffmpeg_args() + ['-f', 'concat', '-safe', '0', '-i', str(work / 'cuts.ffconcat')]
     filters = []
     video, index = add_video(timeline, command, filters, work, write=write)
-    index = add_audio(timeline, command, filters, index)
+    index = add_audio(timeline, command, filters, index, measurement=measurement)
     captions = timeline.spec.get('captions', {})
     subtitle_index = None
     if captions.get('mode') == 'burn':
@@ -96,13 +96,15 @@ def render(timeline, *, cache_enabled=True, cache_bytes=1073741824, overwrite=Tr
                         raise PipelineError('empty_captions', 'captions', 'No selected audible transcript cues.')
                     captions = as_srt(cues)
                     (work / 'captions.srt').write_text(captions, encoding='utf-8')
-                command, graph = final_command(timeline, work, temp, write=True)
+                from .loudness import measure_audio
+                measurement = measure_audio(timeline, work, cancel) if timeline.spec['audio'].get('loudness') else None
+                command, graph = final_command(timeline, work, temp, write=True, measurement=measurement)
                 (work / 'final.ffgraph').write_text(graph, encoding='utf-8')
                 run(command, cwd=work, cancel=cancel)
                 report = inspect_output(temp, timeline.fps, sum(timeline.frames), qa=timeline.spec.get('qa'),
                     loudness=timeline.spec['audio'].get('loudness'), cancel=cancel)
                 report.update(timeline_revision=timeline.spec['revision'], timeline=timeline.spec, sources=identities,
-                    ffmpeg=version, created_at=utcnow(), cache_hits=hits, output=str(output))
+                    ffmpeg=version, created_at=utcnow(), cache_hits=hits, output=str(output), loudness_measurement=measurement)
                 if any(file_hash(Path(p), cancel) != sha for p, sha in identities.items()):
                     report['passed'] = False
                     report['errors'].append('An input changed during rendering.')

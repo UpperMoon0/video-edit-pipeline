@@ -172,7 +172,11 @@ def preflight(timeline):
             first = max(0, float(stream.get('start_time', origin)) - origin)
             if duration is None:
                 raise PipelineError('unknown_video_duration', f'clips.{i}.source', 'Cannot establish a usable video range.', 'Remux/probe the asset first.')
-            if clip['in'] < first - 1e-6 or clip['in'] >= first + duration or clip['in'] + clip['duration'] > first + duration + 1e-6:
+            try:
+                end_tolerance = max(1e-6, float(Fraction(stream.get('time_base', '1/1000000'))))
+            except (ValueError, ZeroDivisionError):
+                end_tolerance = 1e-6
+            if clip['in'] < first - 1e-6 or clip['in'] >= first + duration or clip['in'] + clip['duration'] > first + duration + end_tolerance:
                 raise PipelineError('source_range', f'clips.{i}', f'Requested {clip["in"]:.6f}..{clip["in"] + clip["duration"]:.6f}; usable video range {first:.6f}..{first + duration:.6f}.',
                     'Trim the cut to available footage; implicit freeze/loop padding is not supported.')
         policy = clip['audio']

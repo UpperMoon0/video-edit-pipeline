@@ -1,7 +1,7 @@
 """Audio is always anchored to the video frame-grid duration."""
 
 
-def add_audio(timeline, command, filters, index):
+def add_audio(timeline, command, filters, index, measurement=None, normalization=True):
     total = timeline.duration
     audio = timeline.spec['audio']
     filters.append(f'[0:a:0]aresample=48000:async=1:first_pts=0,apad,atrim=duration={total:.9f},asetpts=N/SR/TB[bed]')
@@ -49,8 +49,11 @@ def add_audio(timeline, command, filters, index):
         filters.append(f'[{mixed}][{voice}]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[mixed]')
         mixed = 'mixed'
     finish = f'[{mixed}]apad,atrim=duration={total:.9f},asetpts=N/SR/TB'
-    if audio.get('loudness'):
+    if normalization and audio.get('loudness'):
         target = audio['loudness']
-        finish += f',loudnorm=I={target["integrated"]}:TP={target["true_peak"]}:LRA={target.get("range", 11)},aresample=48000'
+        finish += f',loudnorm=I={target["integrated"]}:TP={target["true_peak"]}:LRA={target.get("range", 11)}'
+        if measurement:
+            finish += ''.join(':' + key + '=' + str(value) for key, value in measurement.items()) + ':linear=true'
+        finish += ',aresample=48000'
     filters.append(finish + '[outa]')
     return index

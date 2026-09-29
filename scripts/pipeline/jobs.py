@@ -28,6 +28,8 @@ def readonly(path):
 def clone_verified(source, clone, manifest, cancel=None):
     """Source remains untouched; only an owned temporary sibling is writable."""
     expected = manifest.get('sha256')
+    if source is not None and same_file(clone, source):
+        raise PipelineError('clone_alias', 'clone_path', 'Original and clone must be separate files.')
     if clone.exists():
         actual = file_hash(clone)
         if expected and actual.lower() == expected.lower():
@@ -93,6 +95,7 @@ def verify_resume(job, manifest, original_override=None):
     original = Path(original_value).resolve() if original_value else None
     if original and same_file(clone, original):
         raise PipelineError('clone_alias', 'original_path', 'Original and clone must be separate files.')
+    readonly(clone)
     clone_hash = file_hash(clone)
     expected = manifest.get('sha256')
     verified, evidence = False, 'unverified'
@@ -157,8 +160,9 @@ def prepare_job(job, clone, config, stage, cancel=None):
         duration = stream_duration(video[0], info)
         from .timeline import frame_count, rate
         fps = rate(video[0].get('avg_frame_rate', '30/1'))
-        # Floor the initial full-source clip so no rounded frame exceeds EOF.
-        frames = int(duration * float(fps))
+        # Container timestamps can be rounded to milliseconds. The renderer
+        # subsequently requires exactly this many decoded frames.
+        frames = frame_count(duration, fps)
         if frames < 1:
             raise PipelineError('empty_video', 'source', 'Video is shorter than one usable frame.')
         write_json(timeline, {'version': 1, 'revision': 0,

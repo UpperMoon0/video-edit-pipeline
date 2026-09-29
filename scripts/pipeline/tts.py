@@ -60,6 +60,8 @@ def extract_audio(response, maximum_bytes=100 * 1024 * 1024):
         elif pieces[0] in ('audio/l16', 'audio/pcm'):
             # Legacy generateContent TTS uses signed 16-bit LE PCM. Unlike the
             # older script, the sample rate comes from the provider MIME header.
+            if pieces[0] == 'audio/pcm' and options.get('codec') != 'pcm_s16le' and options.get('format') != 's16le':
+                raise PipelineError('tts_format', 'response.mime_type', 'Generic audio/pcm must explicitly declare signed 16-bit little-endian samples.')
             if options.get('codec', 'pcm') not in ('pcm', 'pcm_s16le') or 'rate' not in options:
                 raise PipelineError('tts_format', 'response.mime_type', 'Expected PCM with an explicit rate parameter.')
             try:

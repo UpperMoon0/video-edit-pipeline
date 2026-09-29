@@ -167,6 +167,7 @@ def watch(root, config_path, once=False):
                     if once or stop.is_file():
                         return health
                     time.sleep(config['poll_seconds'])
+                return health
             finally:
                 health.update(status='stopped', heartbeat=utcnow())
                 write_json(state / 'watcher-health.json', health)

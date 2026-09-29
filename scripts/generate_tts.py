@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
-from pipeline.common import PipelineError
+from pipeline.common import PipelineError, reject_alias
 from pipeline.tts import extract_audio, publish_response
 
 MODEL = 'gemini-3.1-flash-tts-preview'
@@ -26,6 +26,9 @@ def main():
         text = args.input.read_text(encoding='utf-8-sig').strip() if args.input else args.text.strip()
         if not text or args.max_text_chars < 1 or len(text) > args.max_text_chars:
             raise PipelineError('tts_text_budget', 'input', 'Script is empty or exceeds the explicitly configured character limit.')
+        if args.output.suffix.lower() != '.wav':
+            raise PipelineError('tts_output', 'output', 'TTS output must use a .wav extension.')
+        reject_alias(args.output.resolve(), [args.input.resolve()] if args.input else [])
         if not args.allow_paid:
             raise PipelineError('paid_request_not_authorized', 'allow-paid', 'No provider request was sent.', 'Add --allow-paid to authorize one request; text is submitted to Gemini.')
         from dotenv import load_dotenv

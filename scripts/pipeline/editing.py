@@ -148,7 +148,7 @@ def convert_scaffold(source, destination):
         raise PipelineError('scaffold_cuts', 'cuts', 'Nonempty legacy cuts have no defined schema.', 'Translate these editorial notes explicitly into clips rather than discarding them.')
     import os
     spec = {'version': 1, 'revision': 0, 'video': raw.get('video', {}),
-        'clips': [{'source': os.path.relpath(original, destination.parent), 'duration': float(int(available * float(fps)) / fps), 'audio': {'mode': 'preserve'}}],
+        'clips': [{'source': os.path.relpath(original, destination.parent), 'duration': float(frame_count(available, fps) / fps), 'audio': {'mode': 'preserve'}}],
         'output': os.path.relpath((source.parent / raw.get('output', '../output/final.mp4')).resolve(), destination.parent)}
     timeline = normalize(spec, destination.parent, path=destination, media=True)
     with FileLock(destination.with_name('.' + destination.name + '.edit.lock')):
