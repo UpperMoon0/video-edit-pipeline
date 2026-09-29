@@ -304,6 +304,32 @@ class MediaIntegration(unittest.TestCase):
         self.assertIn('clips', read_json(converted))
         self.assertIn('cuts', read_json(scaffold))
 
+    def test_footage_index_recovers_missing_visual_evidence(self):
+        index = self.root / 'recover-footage.sqlite3'
+        source = self.root / 'scene.mkv'
+        build_index(source, index)
+        for kind in ('frame', 'sheet'):
+            with self.subTest(kind=kind):
+                item = query_index(index, kind='shot')['items'][0]
+                missing = Path(item['nearby_sample']['frame'] if kind == 'frame' else item['contact_sheets'][0])
+                missing.unlink()
+                self.assertEqual(build_index(source, index)['status'], 'indexed')
+                repaired = query_index(index, kind='shot')['items'][0]
+                self.assertTrue(Path(repaired['nearby_sample']['frame']).is_file())
+                self.assertTrue(all(Path(p).is_file() for p in repaired['contact_sheets']))
+                self.assertEqual(build_index(source, index)['status'], 'cached')
+
+        supplied_root = self.root / 'supplied-evidence'
+        evidence = sample_video(source, supplied_root, count=2)
+        supplied_index = supplied_root / 'index.json'
+        build_index(source, index, samples=supplied_index)
+        before = file_hash(index)
+        (supplied_root / evidence['frames'][0]['frame']).write_bytes(b'')
+        with self.assertRaises(PipelineError) as error:
+            build_index(source, index, samples=supplied_index)
+        self.assertEqual(error.exception.code, 'missing_samples')
+        self.assertEqual(file_hash(index), before)
+
     def test_footage_index_shots_text_time_pagination_and_invalidation(self):
         index = self.root / 'footage.sqlite3'
         result = build_index(self.root / 'scene.mkv', index, transcript=self.root / 'transcript.json')

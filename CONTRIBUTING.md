@@ -8,4 +8,4 @@ For every regression, include a test that would fail before the fix. Prefer deco
 
 Before committing, inspect `git status`, `git diff --cached`, and `git check-ignore` for generated/private paths. Do not widen `.gitignore` to publish jobs, recordings, transcripts, prompts, credentials, downloaded tools, or fonts. Newly needed source/documentation directories must be allowlisted narrowly.
 
-License selection is a maintainer decision. No license is inferred from the repository being public. Do not add a guessed license or copy third-party implementation code/assets without permission and attribution.
+This project uses the maintainer-selected MIT license in `LICENSE`. Do not copy third-party implementation code/assets without permission and attribution; the project license does not relicense third-party media, fonts, or dependencies.

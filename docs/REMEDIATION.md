@@ -18,7 +18,7 @@ PR scope: actionable issues #1–#20 and tracker #21. A changed code path or exi
 | #12 schema/preflight | Exported runtime schema, structured modes/errors, generated examples, nonoverwriting conversion | Schema equality/bad-value tests, real preflight, dry-run/no-write and conversion tests |
 | #13 tests/CI | Hosted Linux/Windows/Python matrix with real FFmpeg, PS5.1/7 contracts and provider mocks | Required suite and retained CI environment/result logs |
 | #14 operations/doctor | Tool/version/filter/config/storage readiness, scoped task lifecycle, captured paths, logs/health | Doctor and watcher-health tests; real isolated Windows scheduler acceptance |
-| #15 docs/privacy | README, operations/API/timeline/testing guides, changelog, contribution policy, narrow allowlist | CLI/example walkthroughs, schema equality, staged-file privacy audit; explicit license decision remains with maintainer |
+| #15 docs/privacy | README, operations/API/timeline/testing guides, changelog, contribution policy, narrow allowlist, maintainer-selected MIT license | CLI/example walkthroughs, schema equality, staged-file privacy audit; maintainer authorized MIT on 2026-09-29 |
 | #16 typed controls | Stable job JSON controls, revisions/history, split/trim/reorder/ripple guards/undo, bounded previews | CLI lifecycle, revision-conflict/undo, frame-grid preview tests |
 | #17 footage index | Source/settings-keyed local SQLite evidence, observed samples/shots/words, bounded queries/stale detection | Known-shot/text/time/pagination/cache/invalidation tests |
 | #18 audio capabilities | Per-clip stream/mute/gain, optional narration, delivery-quality resampling, ducking, measured normalization | Selected-stream and all audio-mode tests; decoded ducking/loudness measurements |

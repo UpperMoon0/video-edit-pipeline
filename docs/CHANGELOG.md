@@ -8,4 +8,6 @@ Adds a versioned timeline schema, structured validation and media preflight, rat
 
 Adds precise sampled-frame evidence, typed JSON editing controls with revisions/history, bounded range previews, local footage indexing/search, cut-aware captions, sidecar/mux/burn delivery, and safe file-backed Unicode titles. TTS now validates completion and audio payloads; optional providers/models are no longer imported or downloaded by core startup.
 
-Adds doctor diagnostics, per-checkout Windows watcher lifecycle operations, bounded logs and health records, synthetic examples, Linux/Windows CI, and operational/API/privacy documentation. No merge, deployment, provider purchase, automatic upload, or license selection is part of this release.
+Adds doctor diagnostics, per-checkout Windows watcher lifecycle operations, bounded logs and health records, synthetic examples, Linux/Windows CI, and operational/API/privacy documentation. Includes the maintainer-selected MIT license.
+
+Footage index rebuilds now restore missing or empty generated thumbnails/contact sheets instead of returning a stale cache hit. Missing explicitly supplied sample evidence produces an actionable error without replacing the previous index.

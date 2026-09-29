@@ -87,4 +87,4 @@ Each checkout has its own task name and captures absolute Python/FFmpeg paths. S
 
 The repository is deny-by-default: only reusable source, schemas, synthetic-example generators, tests, and documentation are allowed. Jobs, state, logs, models, media, credentials, reports, narration, and project-specific editorial work remain local. A QA report includes local source paths and hashes; do not publish it unreviewed.
 
-**Maintainer decision required:** choose an explicit license before advertising redistribution rights. This change intentionally does not invent a license or claim rights for third-party media, fonts, FFmpeg builds, or generated speech. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [review remediation map](docs/REMEDIATION.md).
+The pipeline source is available under the maintainer-selected [MIT license](LICENSE). Third-party media, fonts, FFmpeg builds, and generated speech remain subject to their own applicable terms. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [review remediation map](docs/REMEDIATION.md).

@@ -15,6 +15,12 @@ def connect(path):
     return db
 
 
+def evidence_available(frames, sheets, base):
+    """A saved index is reusable only while its visual evidence still exists."""
+    paths = [base / frame['frame'] for frame in frames] + [base / sheet for sheet in sheets]
+    return bool(frames and sheets) and all(p.is_file() and p.stat().st_size > 0 for p in paths)
+
+
 def build_index(source, index_path, *, transcript=None, samples=None, threshold=.3):
     source, index_path = Path(source).resolve(), Path(index_path).resolve()
     if isinstance(threshold, bool) or not isinstance(threshold, (int, float)) or not math.isfinite(threshold) or not 0 < threshold <= 1:
@@ -46,7 +52,9 @@ def build_index(source, index_path, *, transcript=None, samples=None, threshold=
             prior = db.execute('SELECT data FROM assets WHERE asset_id=? AND source=? AND settings_hash=?',
                                (asset_id, str(source), settings_hash)).fetchone()
             if prior:
-                return {'version': 1, 'status': 'cached', 'asset_id': asset_id, 'index': str(index_path)}
+                saved = json.loads(prior['data'])
+                if not saved['has_video'] or evidence_available(saved['samples'], saved['contact_sheets'], index_path.parent):
+                    return {'version': 1, 'status': 'cached', 'asset_id': asset_id, 'index': str(index_path)}
             info = probe(source)
             video = next((s for s in info['streams'] if s['codec_type'] == 'video'), None)
             audio = next((s for s in info['streams'] if s['codec_type'] == 'audio'), None)
@@ -61,12 +69,18 @@ def build_index(source, index_path, *, transcript=None, samples=None, threshold=
                     if samples_data.get('version') != 2 or samples_data.get('source_sha256') != source_hash:
                         raise PipelineError('stale_samples', 'samples', 'Sample evidence does not match this source identity.')
                     samples_root = supplied_samples.parent
+                    if not evidence_available(samples_data['frames'], samples_data['sheets'], samples_root):
+                        raise PipelineError('missing_samples', 'samples', 'Supplied sample evidence is missing or empty.',
+                                            'Run sampling again, or omit --samples to regenerate local evidence.')
                 else:
                     samples_root = index_path.parent / ('footage-samples-' + source_hash[:16])
                     previous_index = samples_root / 'index.json'
-                    if previous_index.is_file() and read_json(previous_index).get('source_sha256') == source_hash:
-                        samples_data = read_json(previous_index)
-                    else:
+                    if previous_index.is_file():
+                        previous = read_json(previous_index)
+                        if (previous.get('version') == 2 and previous.get('source_sha256') == source_hash
+                                and evidence_available(previous['frames'], previous['sheets'], samples_root)):
+                            samples_data = previous
+                    if samples_data is None:
                         samples_data = sample_video(source, samples_root, count=8)
                 result = run(ffmpeg_args() + ['-loglevel', 'info', '-i', str(source), '-an',
                     '-vf', f'setpts=PTS-STARTPTS,select=gt(scene\\,{threshold}),showinfo', '-fps_mode', 'vfr', '-f', 'null', '-'])

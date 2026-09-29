@@ -3,6 +3,7 @@
 !/.gitignore
 !/README.md
 !/CONTRIBUTING.md
+!/LICENSE
 !/requirements.txt
 !/requirements-optional.txt
 !/config.example.json
