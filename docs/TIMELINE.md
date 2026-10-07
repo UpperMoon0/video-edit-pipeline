@@ -52,6 +52,8 @@ Every render has a 48 kHz stereo audio bed covering the video duration, includin
 
 Legacy clips default to `audio.mode: "mute"`. Use `preserve` to retain original-quality source audio, `stream` to select a zero-based audio-stream index, and `gain` for linear gain. Missing source audio at the default stream becomes silence; an explicitly invalid stream index fails. Resampling/channel-layout normalization happens at delivery quality, never by reusing the 16 kHz transcription derivative.
 
+Synthetic transition whooshes and risers are opt-in only. Prefer clean cuts; do not add them as a default editing step. An available `sfx` field or generator is not an instruction to use it.
+
 Narration is optional. `voiceover_start` places it on the timeline and `voiceover_source_in` seeks its source. Music/SFX accept `source_in`, `volume`, and fades. Optional ducking compresses the background mix against narration; it does not process a nonexistent narration track. Optional `audio.loudness` uses measured two-pass normalization:
 
 ```json
