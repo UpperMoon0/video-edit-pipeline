@@ -96,6 +96,11 @@ framework for shot selection, cut timing, pacing, music, SFX, narration, overlay
 proof shots, and opening hooks. The core priority is action and story clarity first,
 then sound and music, with transition style last.
 
+See [production lessons and a faster workflow](docs/PRODUCTION_LESSONS.md) for
+reusable filming, narration, review and delivery checks learned from production.
+Use clean cuts and natural source audio by default. Synthetic whooshes and risers
+are opt-in only; an available sound-effect generator is not an instruction to use it.
+
 ## Local project data
 
 Only explicitly allowed pipeline files are tracked. Media, video-specific projects,

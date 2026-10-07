@@ -108,10 +108,14 @@ Do not fear empty space.
 
 Treat sound as a layered system rather than one oversized impact sample.
 
+Use clean cuts and natural source audio by default. Synthetic transition whooshes
+and risers are opt-in only and require an explicit request. Available SFX tooling
+does not make those effects a required production step.
+
 A strong event may combine:
 
 - environmental bed or room/game ambience;
-- movement or whoosh;
+- natural movement sounds;
 - mechanical or physical impact;
 - low-frequency weight;
 - debris, crackle, resonance, or tail;
