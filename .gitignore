@@ -4,6 +4,9 @@
 !/README.md
 !/config.example.json
 !/requirements.txt
+!/docs/
+/docs/*
+!/docs/EDITORIAL_GUIDE.md
 !/scripts/
 /scripts/*
 !/scripts/MediaPipeline.ps1
