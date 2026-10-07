@@ -89,6 +89,13 @@ array (each with `source`, `duration`, and optional `in`), `audio.voiceover`, an
 `output`. The renderer does not consume the scaffold's `cuts` field. Asset paths
 are relative to the timeline file unless absolute.
 
+## Editorial standard
+
+Use [docs/EDITORIAL_GUIDE.md](docs/EDITORIAL_GUIDE.md) as the default decision
+framework for shot selection, cut timing, pacing, music, SFX, narration, overlays,
+proof shots, and opening hooks. The core priority is action and story clarity first,
+then sound and music, with transition style last.
+
 ## Local project data
 
 Only explicitly allowed pipeline files are tracked. Media, video-specific projects,
