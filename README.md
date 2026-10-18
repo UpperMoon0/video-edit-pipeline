@@ -46,6 +46,8 @@ Renders use bounded lossless cut intermediates, external filter graphs, and a fu
 
 See [timeline format and examples](docs/TIMELINE.md), [the JSON CLI and editing controls](docs/API.md), and [operations/recovery](docs/OPERATIONS.md).
 
+For filming, narration, review and delivery planning, see [production lessons and a faster workflow](docs/PRODUCTION_LESSONS.md), including avoidable rework and proposed pipeline improvements.
+
 ## Reproducible synthetic examples
 
 Generate fixtures in a **new or empty directory outside the checkout**. Existing files are never overwritten by the fixture generator.
@@ -69,7 +71,7 @@ On Linux, substitute `.venv/bin/python` and a writable media/work directory. Lon
 
 Without `--allow-download`, transcription uses an existing model cache or a local model path only. The canonical transcript JSON points to an immutable SRT/text bundle. Gemini TTS requires `GEMINI_API_KEY`, an explicit `--allow-paid` authorization, and a generateContent-compatible PCM/WAV TTS model. Its model and voice are configurable. Script text is submitted to that provider; footage is not. The default legacy model identifier is not a promise of ongoing provider availability. Non-STOP responses, malformed audio, truncated samples, and unsupported formats are rejected before publication. No paid/provider call is part of CI.
 
-`generate_cinematic_sfx.py OUTPUT_DIRECTORY` remains a local standard-library-only utility for synthetic whoosh/riser/impact/click WAVs.
+Use clean cuts and natural source audio by default. Do not add synthetic whoosh or riser sounds to transitions unless the user explicitly asks for them. The optional local SFX generator is a utility, not an editorial recommendation or a step required for a finished video.
 
 ## Watcher
 

@@ -112,10 +112,12 @@ These are proposed development priorities, not existing CLI options:
 | 2 | Upload preflight and durable resumable transfer recovery in an optional publishing adapter. | Expired/wrong-channel authorization is detected before transfer; interruption resumes the same upload without duplicate publication. |
 | 3 | A local stage record for creative approval, recording, narration, draft, master QA and delivery. | Invalidated approvals are visible after edits, and unchanged artifacts are reused by verified identity. |
 
-Use the [editorial guide](EDITORIAL_GUIDE.md) and the
-[setup and rendering instructions](../README.md) alongside these production
-checks. Add regression coverage when the proposals become implementation changes;
-this document does not establish new schema fields or automated approval gates.
+Use the [editorial guide](EDITORIAL_GUIDE.md),
+[setup and rendering instructions](../README.md),
+[timeline validation and preflight](TIMELINE.md), and
+[operations/recovery](OPERATIONS.md) alongside these production checks.
+Add regression coverage when the proposals become implementation changes; this
+document does not establish new schema fields or automated approval gates.
 
 ## Packaging and image lessons
 
