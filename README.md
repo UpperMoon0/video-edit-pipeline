@@ -83,6 +83,18 @@ Without `--allow-download`, transcription uses an existing model cache or a loca
 
 Each checkout has its own task name and captures absolute Python/FFmpeg paths. Scheduled execution uses the installing interactive Windows account, not SYSTEM or a remote service account. `Stop` requests cooperative shutdown; use `Status` to observe completion. Removing the task preserves jobs and media. The old unscoped `CodexVideoMediaInbox` task is not silently adopted or removed. See the [migration and recovery guide](docs/OPERATIONS.md).
 
+## Editorial standard
+
+Use [the editorial guide](docs/EDITORIAL_GUIDE.md) and
+[production lessons](docs/PRODUCTION_LESSONS.md) when planning and reviewing edits.
+Prioritize readable action, story clarity and proof, then sound and music.
+Clean cuts and natural source audio are the default. Synthetic transition
+whooshes and risers require an explicit request.
+
+Review short ranges with `python scripts/pipeline.py preview TIMELINE --start 0 --end 15`
+before exporting a complete video. These fast, low-resolution previews preserve
+the timeline's frame selection; they are not a live browser editor.
+
 ## Privacy, licensing, contribution
 
 The repository is deny-by-default: only reusable source, schemas, synthetic-example generators, tests, and documentation are allowed. Jobs, state, logs, models, media, credentials, reports, narration, and project-specific editorial work remain local. A QA report includes local source paths and hashes; do not publish it unreviewed.
