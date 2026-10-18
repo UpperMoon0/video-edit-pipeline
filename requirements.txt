@@ -1,3 +1,2 @@
-faster-whisper
-google-genai
-python-dotenv
+# Core validation only; optional models and providers are separate.
+jsonschema==4.25.1
