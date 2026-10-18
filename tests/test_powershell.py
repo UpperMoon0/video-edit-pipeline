@@ -9,12 +9,15 @@ import tempfile
 import time
 import unittest
 import uuid
+import urllib.request
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / 'scripts'), str(ROOT / 'examples')]
 from generate_fixtures import generate
 from pipeline.common import read_json, write_json, file_hash
+from pipeline.workspace import initialize
 
 
 @unittest.skipUnless(os.name == 'nt', 'Windows-specific contracts run in the Windows matrix and on a real Windows workstation.')
@@ -46,6 +49,31 @@ class PowerShellContracts(unittest.TestCase):
             with self.subTest(shell=shell):
                 result = self.ps(shell, script, ROOT / 'scripts')
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_workspace_launcher_reuses_only_the_requested_project(self):
+        first = initialize(self.media / 'minimal.json', self.media / 'review first', title='First review')['project']
+        second = initialize(self.media / 'minimal.json', self.media / 'review second', title='Second review')['project']
+        process = subprocess.Popen([sys.executable, str(ROOT / 'scripts/workspace.py'), first, '--port', '0'],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+        try:
+            line = process.stdout.readline()
+            self.assertIn('http://127.0.0.1:', line)
+            url = line.strip().split(' ')[-1]
+            port = url.rsplit(':', 1)[-1]
+            with patch.dict(os.environ, {'PIPELINE_PYTHON': sys.executable}):
+                for shell in self.shells:
+                    with self.subTest(shell=shell):
+                        reused = self.ps(shell, ROOT / 'scripts/Open-Workspace.ps1', '-Project', first, '-Port', port, '-NoBrowser')
+                        self.assertEqual(reused.returncode, 0, reused.stdout + reused.stderr)
+                        rejected = self.ps(shell, ROOT / 'scripts/Open-Workspace.ps1', '-Project', second, '-Port', port, '-NoBrowser')
+                        self.assertNotEqual(rejected.returncode, 0)
+                        self.assertIn('another workspace', rejected.stdout + rejected.stderr)
+                        with urllib.request.urlopen(url + '/api/project', timeout=5) as response:
+                            self.assertEqual(json.load(response)['title'], 'First review')
+                        self.assertIsNone(process.poll())
+        finally:
+            process.terminate()
+            process.communicate(timeout=10)
 
     def test_powershell_json_utf8_bom_nonascii_to_python(self):
         source = self.media / 'nguyên 日本語 clip.mkv'

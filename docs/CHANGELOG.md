@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Move the local video review UI into reusable pipeline source. Add project-driven
+playback, scene/storyboard navigation, complete-script reading/copy/download, and
+bounded range previews. Add `workspace-init`, a shared server and Windows launcher,
+a versioned workspace manifest contract, setup/migration guidance and synthetic
+HTTP/render regressions. Project media, scripts and generated workspaces stay private.
+
 ## 0.2.0 — review remediation
 
 Review follow-up: bind cached cuts to verified private source snapshots; import historical jobs without claiming new recordings at reused pathnames or dropping duplicate history; normalize video frame selection before splitting and preview trimming. New real-media regressions cover all three failures. This supersedes the earlier completion claim pending fresh CI and review.

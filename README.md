@@ -91,9 +91,26 @@ Prioritize readable action, story clarity and proof, then sound and music.
 Clean cuts and natural source audio are the default. Synthetic transition
 whooshes and risers require an explicit request.
 
+The shared browser workspace provides video playback, scene navigation, a storyboard,
+complete-script reading/copy/download, and pipeline range previews. Its UI and server
+live in the repository; each video supplies a private project manifest.
+
+```powershell
+python scripts/pipeline.py workspace-init 'C:\Media\Episode\timeline.json' 'C:\Media\Episode\review' --script 'C:\Media\Episode\script.txt' --title 'My episode'
+python scripts/workspace.py 'C:\Media\Episode\review' --port 8766
+# Windows: start in the background and open the browser
+.\scripts\Open-Workspace.ps1 -Project 'C:\Media\Episode\review' -Port 8766
+```
+
+See [browser workspace setup and project format](docs/WORKSPACE.md). Initializing a
+workspace reads the timeline without rendering or copying footage. An existing full
+cut, per-scene narration, and storyboard are optional. Project data and scripts stay
+local and ignored by Git.
+
 Review short ranges with `python scripts/pipeline.py preview TIMELINE --start 0 --end 15`
 before exporting a complete video. These fast, low-resolution previews preserve
-the timeline's frame selection; they are not a live browser editor.
+the timeline's frame selection. The browser workspace reviews existing timeline data;
+timeline editing remains available through the JSON CLI.
 
 ## Privacy, licensing, contribution
 

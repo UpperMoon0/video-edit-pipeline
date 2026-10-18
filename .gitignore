@@ -12,6 +12,9 @@
 !/scripts/**/
 !/scripts/**/*.py
 !/scripts/**/*.ps1
+!/scripts/pipeline/web/index.html
+!/scripts/pipeline/web/app.js
+!/scripts/pipeline/web/style.css
 !/tests/
 /tests/**
 !/tests/**/

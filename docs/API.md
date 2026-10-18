@@ -4,6 +4,27 @@ Run `python scripts/pipeline.py --help` for the complete command list. Global `-
 
 Exit 0 means the requested operation completed successfully; exit 1 indicates validation, environment, media, or terminal-job failure; exit 130 indicates interruption. A dry validation success is not a render, transcript, or provider-success claim. The legacy `render_timeline.py` wrapper prints its render/validation result directly for compatibility.
 
+## Browser workspace
+
+```text
+pipeline.py workspace-init TIMELINE NEW_DIRECTORY [--script TEXT_FILE] [--master VIDEO]
+    [--title TITLE] [--media-root DIRECTORY] [--narration JSON_STRING_ARRAY]
+python scripts/workspace.py PROJECT_OR_DIRECTORY [--port 8766] [--describe]
+```
+
+`workspace-init` creates a private, versioned project manifest without rendering or
+copying media, and refuses an existing destination. `workspace.py` runs the shared
+loopback browser UI; `--describe` validates and prints public project details instead.
+The long-running server prints its URL rather than a JSON CLI envelope. See
+[the workspace guide](WORKSPACE.md) for optional inputs and migration.
+
+The local UI API exposes `GET /api/project`, `GET /api/script`,
+`POST /api/preview` with `{ "start": 0, "end": 15 }`, and
+`GET /api/tasks/ID`. POST returns `{ "task": "ID" }` with status 202; task states
+are `queued`, `rendering`, `ready` (with `media` URL), or `failed` (with `error`).
+Registered media IDs support GET/HEAD byte ranges at `/media/ID`. These HTTP
+responses are workspace objects rather than the CLI's `ok/result` envelopes.
+
 ## Job controls
 
 ```text

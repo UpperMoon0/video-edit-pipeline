@@ -76,6 +76,14 @@ def parser():
     c = commands.add_parser('convert-scaffold')
     c.add_argument('source', type=Path)
     c.add_argument('destination', type=Path)
+    workspace = commands.add_parser('workspace-init', help='Create a reusable browser workspace from a timeline')
+    workspace.add_argument('timeline', type=Path)
+    workspace.add_argument('destination', type=Path, help='New workspace directory')
+    workspace.add_argument('--script', type=Path)
+    workspace.add_argument('--master', type=Path, help='Existing full-cut video; omitted for source review')
+    workspace.add_argument('--media-root', type=Path)
+    workspace.add_argument('--narration', type=Path, help='JSON string array, one narration per clip')
+    workspace.add_argument('--title')
     return p
 
 
@@ -84,6 +92,10 @@ def dispatch(args):
     from pipeline.state import JobStore
     name, root = args.command, args.root.resolve()
     config_path = args.config or root / 'config.json'
+    if name == 'workspace-init':
+        from pipeline.workspace import initialize
+        return initialize(args.timeline, args.destination, script=args.script, master=args.master,
+                          media_root=args.media_root, narration=args.narration, title=args.title)
     if name == 'doctor':
         return doctor(root, config_path)
     if name in ('setup', 'discover', 'ingest', 'resume', 'watch', 'retry'):

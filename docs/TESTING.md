@@ -2,6 +2,14 @@
 
 ## Required suite
 
+`test_workspace.py` checks reusable workspace creation, rational scene timing,
+optional script/storyboard/master inputs, manifest validation, shared static assets,
+full-script freshness, HTTP Host/Origin and media range boundaries, preview admission,
+the Git privacy allowlist, and a real synthetic-media preview through the JSON CLI.
+The symlink replacement case requires host symlink privileges; rendering never skips
+for missing FFmpeg. UI changes should also be reviewed in a browser using a synthetic
+project as well as any locally migrated project.
+
 ```text
 python -m pip install -r requirements.txt
 python -m compileall -q scripts tests examples

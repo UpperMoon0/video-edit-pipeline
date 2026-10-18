@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Video Edit Pipeline review workspace v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "media_root": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\u0000\r\n]+$"
+    },
+    "timeline": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\u0000\r\n]+$"
+    },
+    "script": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\u0000\r\n]+$"
+    },
+    "master": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "duration": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[^\u0000\r\n]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0
+          },
+          "duration": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "media": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "media_in": {
+            "type": "number",
+            "minimum": 0
+          },
+          "media_type": {
+            "enum": [
+              "video",
+              "image"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "text",
+          "start",
+          "duration",
+          "media",
+          "media_in"
+        ]
+      },
+      "minItems": 1
+    },
+    "storyboard": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[^\u0000\r\n]+$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0
+          },
+          "duration": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "media": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "media_in": {
+            "type": "number",
+            "minimum": 0
+          },
+          "media_type": {
+            "enum": [
+              "video",
+              "image"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "text",
+          "start",
+          "duration",
+          "media",
+          "media_in"
+        ]
+      }
+    },
+    "assets": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9_-]+$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[^\u0000\r\n]+$"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "title",
+    "media_root",
+    "duration",
+    "scenes",
+    "assets"
+  ]
+}
