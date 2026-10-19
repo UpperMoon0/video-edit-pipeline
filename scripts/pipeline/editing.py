@@ -51,10 +51,32 @@ def apply_operation(timeline, operation):
     spec = copy.deepcopy(timeline.spec)
     name = operation.get('op')
     allowed = {'split': {'op', 'clip_id', 'at'}, 'trim': {'op', 'clip_id', 'in', 'duration', 'ripple'},
-        'reorder': {'op', 'clip_ids'}, 'ripple-delete': {'op', 'clip_id'}, 'undo': {'op', 'revision'}}
+        'reorder': {'op', 'clip_ids'}, 'ripple-delete': {'op', 'clip_id'}, 'undo': {'op', 'revision'},
+        'editorial': {'op', 'clip_id', 'fields'}}
     if name not in allowed or operation.keys() - allowed[name]:
         raise PipelineError('operation_schema', 'operation', 'Unsupported operation or fields.')
-    if name == 'reorder':
+    if name == 'editorial':
+        fields = operation.get('fields')
+        if not isinstance(fields, dict) or not fields:
+            raise PipelineError('operation_schema', 'fields', 'Supply scene editorial fields to update.')
+        clip = spec['clips'][_clip_index(spec, operation.get('clip_id'))]
+        previous = clip.setdefault('editorial', {})
+        # Changed words cannot continue to claim an existing recording is current.
+        if 'text' in fields and fields['text'] != previous.get('text', ''):
+            fields = {**fields, 'narration_status': 'pending'}
+            if previous.get('narration_status') == 'recorded':
+                clip['audio'] = {'mode': 'mute'}
+            audio = spec.get('audio', {})
+            if audio.pop('voiceover', None):
+                for key in ('voiceover_start', 'voiceover_source_in', 'voiceover_volume', 'ducking'):
+                    audio.pop(key, None)
+                for item in spec['clips']:
+                    if item.get('editorial', {}).get('text'):
+                        item['editorial']['narration_status'] = 'pending'
+                if spec.get('captions', {}).get('kind') == 'narration':
+                    spec.pop('captions')
+        previous.update(fields)
+    elif name == 'reorder':
         ids = operation.get('clip_ids')
         known = [c['id'] for c in spec['clips']]
         if not isinstance(ids, list) or len(ids) != len(known) or set(ids) != set(known):
@@ -101,7 +123,7 @@ def apply_operation(timeline, operation):
     return normalize(spec, timeline.base, path=timeline.path, media=True)
 
 
-def edit_timeline(path, expected_revision, operation):
+def edit_timeline(path, expected_revision, operation, *, validator=None):
     path = Path(path).resolve()
     with FileLock(path.with_name('.' + path.name + '.edit.lock'), timeout=30):
         current = load_timeline(path, media=True)
@@ -116,6 +138,8 @@ def edit_timeline(path, expected_revision, operation):
             updated = normalize(snapshot['timeline'], current.base, path=path, media=True)
         else:
             updated = apply_operation(current, operation)
+        if validator:
+            validator(updated)
         snapshot_path = history / (str(expected_revision) + '.json')
         if snapshot_path.exists():
             old = read_json(snapshot_path)

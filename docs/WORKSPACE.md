@@ -1,127 +1,177 @@
 # Browser editing workspace
 
-Every video uses the same HTML, CSS, JavaScript and Python server in
-`scripts/pipeline/web/` and `scripts/pipeline/workspace.py`. Never copy these files
-into a job. A video's private `project.json` supplies its title, scenes, storyboard,
-script and asset references. No project-specific media or narration is bundled.
+Each workspace has **one canonical timeline**. Its clips define scene order,
+source ranges, narration text and production status. The browser, full-script
+panel, range renderer and final renderer all use that edit. Do not maintain an
+"existing cut" and a separate "revised storyboard" as competing current edits.
+Unused takes belong in the source library; previous exports and revision
+snapshots are history, not another active timeline.
 
-## Create and open a workspace
+The shared UI and server live in `scripts/pipeline/web/` and
+`scripts/pipeline/workspace.py`. Never copy them into private jobs.
 
-Start with a valid pipeline timeline. The destination must be a **new directory**;
-initialization refuses to overwrite an existing workspace.
+## Create and open
 
 ```powershell
-python scripts/pipeline.py workspace-init 'C:\Media\Episode\timeline.json' 'C:\Media\Episode\review' --title 'My episode' --script 'C:\Media\Episode\script.txt'
+python scripts/pipeline.py workspace-init 'C:\Media\Episode\timeline.json' 'C:\Media\Episode\review' --title 'My episode'
 python scripts/workspace.py 'C:\Media\Episode\review' --port 8766
-```
-
-Open `http://127.0.0.1:8766/`. Python 3.10–3.13 and the repository's core
-requirements are sufficient to start the server. FFmpeg/FFprobe are needed to build
-previews. No model/provider request or full-video render occurs on startup.
-
-On Windows, the shared launcher starts a hidden server and opens the browser:
-
-```powershell
+# Or launch a hidden server and open the browser on Windows:
 .\scripts\Open-Workspace.ps1 -Project 'C:\Media\Episode\review' -Port 8766
 ```
 
-`-NoBrowser` starts/checks the server without opening a browser. The launcher honors
-`PIPELINE_PYTHON`, then the repository virtual environment, then PATH. It checks the
-workspace identity before reusing an existing server. Choose another port for a
-different video. Logs and a PID file are written beside `project.json`; stopping
-that specific server process preserves media and previews. For foreground use,
-Ctrl+C shuts down the server after any active preview finishes. Restart after
-editing the manifest. The current script file is read fresh whenever Full script
-is opened or its version is selected.
+Initialization requires a valid pipeline timeline and a new workspace directory.
+It does not render a complete video or generate narration. The manifest and all
+referenced inputs must be inside `media_root`, which defaults to the timeline's
+parent; use `--media-root` for assets in sibling directories. Python 3.10–3.13
+and the core requirements start the server; FFmpeg/FFprobe build previews and
+validate media during edits.
 
-## Optional inputs
+`--narration PATH` explicitly imports a UTF-8 JSON array with one string per
+clip into that timeline. `--script PATH` imports a single-clip script only;
+multi-scene prose requires an explicit per-clip mapping. These are one-time
+imports, not separately maintained script files. Unknown mappings fail rather
+than silently placing a newer script alongside an older cut.
 
-- `--master PATH`: play an existing assembled cut. Without it, the UI reviews
-  individual source clips and their selected ranges. Source review does not
-  compose overlays, narration, music, zoom or output framing; Build preview checks
-  those through the actual timeline renderer. Browser codec support varies.
-- `--narration PATH`: a UTF-8 JSON array containing one narration string per
-  timeline clip. These strings populate the scene sidebar and full Cut narration.
-  Without them, scene narration is empty; the complete script file is independent.
-- `--script PATH`: a UTF-8 text file (BOM accepted), shown completely, including
-  any directions/notes, without parsing a particular project's chapter convention.
-  Copy/download preserve the text. Without it, Full script shows cut narration.
-- `--media-root DIRECTORY`: the explicit directory containing the timeline,
-  workspace and every referenced asset/script. Defaults to the timeline's parent.
-  Use a common project directory if assets are in sibling folders.
+## Edit and preview
 
-The initializer uses normalized frame-grid clip lengths and source offsets. It
-does not transcribe footage, infer narration, extract arbitrary scripts, generate a
-storyboard, or change the timeline. Stills are displayed as images in source review.
+- Select a scene to edit its title and narration. **Save script** persists to
+  the canonical timeline using its expected revision. Unsaved changes remain
+  in the editor until saved or discarded.
+- Use source in/duration to apply an equal-length slip or a shortening ripple
+  trim. The existing pipeline editor rejects unsupported extensions and edits
+  crossing audio/graphic events rather than silently breaking synchronization.
+- Move scenes earlier/later when there are no independent timed layers. For
+  timelines with timed audio, captions or graphics, reposition their anchors
+  explicitly through the timeline editor first. These buttons do not pretend
+  to implement arbitrary multitrack ripple editing.
+- **Undo last save** restores the revision before that save as a new revision.
+  Older snapshots remain private history. Concurrent stale writes return a
+  conflict instead of overwriting newer work.
+- The viewer follows the selected timeline sources, including trims and image
+  durations, and can advance through scenes without a full export. This quick
+  source playback does not compose overlays, narration, music, zoom or output
+  framing. **Build preview** renders up to 30 seconds of the same timeline with
+  its actual composition. These are two playback fidelities of one edit.
+- **Full script**, copy, download and `/api/script` derive narration from clips
+  in timeline order. There is no alternate script selector.
 
-## Manifest format
+Mark unfinished visuals `draft` and unrecorded narration `pending`. The UI shows
+those states on scene cards and the narration track. They are production notes,
+not a claim that a recording was verified automatically. Pending scenes may be
+previewed; a successful preview does not mean that narration or animation is done.
+Use labeled placeholder images for missing visuals, not silently reused shots
+from a previous script. Choose provisional durations explicitly; fit the final
+edit to measured complete narration when it exists.
 
-The contract is `schemas/workspace-v1.schema.json`, exported from
-`WORKSPACE_SCHEMA` in `scripts/pipeline/workspace.py`. Unknown properties, invalid
-media references, nonfinite values and inconsistent scene ranges fail at startup.
-Paths resolve relative to the manifest, or may be absolute. Each must resolve to a
-file inside `media_root`; the manifest itself must also be inside that directory.
-Only explicitly registered media IDs are exposed at `/media/ID`.
+Changing narration text marks it pending. If a clip explicitly marked its
+embedded narration as recorded, its audio is muted. An existing global voiceover
+is detached and all affected scene narration is marked pending; undo retains
+the prior configuration. This avoids playing old spoken words under new text.
+Recorded-status labels alone do not attach or generate audio.
+
+The server rereads the timeline for project, script and preview requests. The
+browser checks for saved external changes every five seconds when it has no
+unsaved script changes. No manifest regeneration or server restart is needed
+for normal edits. Restart after changing the project binding or server code.
+
+## Manifest v2 and scene fields
+
+`schemas/workspace-v2.schema.json` is exported from `WORKSPACE_SCHEMA`.
+There are no independent `scenes`, `storyboard`, `script`, `duration`, `assets`
+or `master` fields in the manifest:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "title": "Example episode",
-  "subtitle": "Review before recording",
   "media_root": "..",
-  "timeline": "../timeline.json",
-  "script": "../script.txt",
-  "master": null,
-  "duration": 4,
-  "assets": {"opening": "../opening.mp4"},
-  "scenes": [{
-    "id": "opening", "title": "The opening", "start": 0, "duration": 4,
-    "text": "Opening narration.", "media": "/media/opening", "media_in": 1,
-    "media_type": "video"
-  }],
-  "storyboard": [{
-    "id": "chapter-1", "title": "A new opening", "start": 0, "duration": 5,
-    "text": "Draft words.", "media": null, "media_in": 0
-  }]
+  "timeline": "../timeline.json"
 }
 ```
 
-Cut scenes must be sequential, start at zero and cover `duration`. Storyboard
-chapters are independent visual references: `media_in` selects their source
-offset, and their duration bounds playback. Their narration status is not inferred.
-`media_type` may be `video` (default) or `image`. A null scene media reference shows
-an explicit empty visual state. Omit `storyboard` or supply `[]` to hide that tab.
-Omit `timeline` for playback/script review without rendering controls. `master`
-must be null or an asset ID reference. If supplied, it is the assembled cut and
-scene timestamps seek within it.
+Store editorial data on each clip in the existing timeline v1 schema:
 
-Change scene titles/text and add storyboard entries in the manifest as needed.
-Keep revisions of scripts and media private. For a changed timeline, generate a
-new workspace and carry over relevant editorial metadata; a duration mismatch
-fails rather than silently seeking against stale timings.
+```json
+{
+  "id": "opening",
+  "source": "opening.mp4",
+  "in": 0,
+  "duration": 8,
+  "audio": {"mode": "mute"},
+  "editorial": {
+    "title": "Where do I start?",
+    "text": "The opening narration.",
+    "visual_status": "draft",
+    "narration_status": "pending",
+    "notes": "New animation and narration still needed."
+  }
+}
+```
 
-## Local service and previews
+`visual_status` is `draft` or `ready`; `narration_status` is `pending`, `recorded`
+or `none`. Legacy timeline clips without editorial fields remain usable. Source
+ranges and total duration derive from the normalized rational frame grid, not
+duplicated scene timings in a workspace manifest.
 
-The server binds only to IPv4 loopback. Host/Origin checks reject other origins;
-static routes and media IDs are allowlisted, and HTML never interprets project
-strings as markup. Byte-range and HEAD requests support video seeking. Responses
-are not cached. Script, timeline, manifest and directory paths have no generic
-file-serving route. Preview output stays in the workspace's `previews` directory.
+## Exports and preview validity
 
-One preview is queued/rendered at a time, with a 30-second range limit and a
-180-second render timeout. A session accepts up to 100 previews; restart for a
-new session. Restart loses the session's task URLs but preserves files. Failed
-previews leave previous deliverables intact. The UI never starts full exports.
-This is a local review tool, without network authentication or public hosting.
+`--master PATH` may bind a previously verified export of the exact input
+timeline. This is a caller-supplied association, not an automated check that
+the spoken words match the script. The manifest stores it under `render` with
+the normalized timeline's SHA-256. It is only offered for playback while that
+hash matches. Any timeline change, even a text-only change or an external edit
+without a revision increment, makes that export stale. It stays on disk and
+cannot silently override current sources. Editing sources in place is still
+discouraged: use immutable/versioned media and update their timeline references.
+Bound export playback URLs include the timeline fingerprint. Rebinding an export
+at the same filename after an edit therefore reloads the video element instead
+of retaining frames already buffered from the previous edit. The server's
+no-store response alone does not clear an existing video buffer.
 
-## Migrating older copied editors
+A range preview snapshots the exact requested timeline before queuing, records
+its revision/hash and renders that snapshot. Saving another edit during a render
+cannot change the queued composition. The browser refuses to activate the result
+as the current preview if the timeline has changed. Snapshot JSON, previews and
+history remain private job data.
 
-Keep the existing private manifest/media, add `version: 1` and `media_root`, then
-validate it with `python scripts/workspace.py PATH --describe`. Point its launcher
-at the shared `scripts/Open-Workspace.ps1`. After successful playback/script/preview
-checks, remove the copied `index.html`, `app.js`, `style.css` and project-local
-server. Preserve timelines, source files, narration, previews and editorial data.
+## Local service
 
-Project-specific footage preparation may remain local, but it must produce this
-manifest format and use the shared UI. Future UI fixes then apply to every project
-when it uses the updated pipeline checkout.
+The server binds to IPv4 loopback. Host/Origin checks reject other origins;
+static routes and media IDs are allowlisted. Project strings are never rendered
+as HTML. Byte-range and HEAD requests support video seeking. Paths have no
+generic file-serving route. Inputs and restored revisions are checked against
+the workspace root before a workspace edit is committed.
+
+`POST /api/edit` accepts `expected_revision` and a supported timeline `operation`
+(`editorial`, `trim`, `reorder`, `undo`). `POST /api/preview` accepts `start`, `end`
+and the current `timeline_sha256`. One preview is queued/rendered at a time,
+with a 30-second range limit, 180-second timeout and 100-preview session limit.
+The UI never starts complete exports. This local tool has no network
+authentication or public hosting.
+
+The Windows launcher uses `PIPELINE_PYTHON`, then the repository environment,
+then PATH. It checks the workspace identity before reusing a server; it also
+checks the API version so outdated server code requires a restart. `-NoBrowser`
+does not open another tab. Logs and a PID file stay beside `project.json`.
+
+## Migrate a v1 workspace
+
+The v1 schema remains available as a historical format; the current server
+rejects it with migration guidance. It does not guess which conflicting edit
+should win.
+
+1. Back up the private manifest and timeline outside the active workspace.
+2. Choose the intended current edit. Translate its scenes into canonical clips,
+   preserving source paths/ranges, scene narration and production notes. Use
+   labeled images for missing visuals and validate source bounds. Preserve
+   unused footage separately rather than appending it as accidental chapters.
+3. Store each scene's text/status under `clips[].editorial`. Remove outdated
+   narration/audio from the active timeline; keep the files in history.
+4. Replace the manifest with v2 pointing to that timeline. Do not bind the old
+   master as a current render. Keep prior exports as historical files.
+5. Validate with `python scripts/workspace.py PATH --describe`, restart the
+   owned server, and review the opening, script, scene navigation and a short
+   composed preview. Remove copied UI/server code only after the shared UI works.
+
+Project-specific preparation remains private and should update this canonical
+timeline. It must not regenerate an older cut/storyboard pair over current work.

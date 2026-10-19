@@ -71,6 +71,14 @@ Each cut should add information, change perspective, increase stakes, or improve
 
 For demonstrations, establish geography early enough that the viewer understands where the action occurs. When scale is the point, include at least one shot that makes the scale unambiguous.
 
+For repeated gameplay, vary real camera position and scale: establish the arena,
+move closer for an exchange, use an over-the-shoulder or opponent-side view when
+it clarifies the action, and return wide for the result. Export alternate replay
+cameras at the same continuing source timestamps so a perspective cut cannot
+skip or repeat combat. Check camera clearance against roofs, walls and fighters.
+Keep paired comparisons on matching camera angles and cut both panels together.
+Preserve the continuous sound bed across those picture cuts.
+
 ## 4. Proof shots
 
 When a video is demonstrating a technical claim, do not cut away from the exact moment that proves it.
@@ -162,9 +170,49 @@ Keep narration sparse enough that source sound, music, and visuals can carry par
 
 For showcase videos, prefer short declarative lines over dense explanation during the most visually important moments.
 
+For an experiment story, connect the goal, obstacle, attempted approach and
+observed consequence in natural speech. Explain the core technical change when
+it makes the result understandable; omit library names that add no useful
+meaning. Avoid a script made of disconnected punchlines. Check the actual
+recorded opening against the current script after revisions.
+
 ## 9. On-screen text
 
 Text should communicate evidence or orientation, not fill empty space.
+
+Show quantities and relationships directly when possible: use proportional
+charts for score comparisons, outcome grids for match counts, task maps for
+routes, and animated sprite interactions for actions. Keep comparable scores on
+the same labeled scale. Retain short names, units and essential qualifications;
+do not replace useful evidence with decorative motion or invent measurements
+for a schematic. In character diagrams, make combatants face their opponent or
+intended target and review turns, entrances and exits throughout the animation.
+
+Use distinct action poses when one character represents different jobs: an
+attack, running and holding ground should read differently before their labels
+are read. Preserve character identity across variants. Do not add equipment or
+actions that imply capabilities the demonstrated system does not have.
+
+For route animations, move by distance along the path rather than giving every
+waypoint equal time. Fit the full journey and a brief arrival hold inside the
+visible scene. Check the complete traversal, including corners and the final
+approach; do not let a loop reset or a short segment create an accidental stall.
+
+When explaining memory or a sequence, show what changes between observations
+and how that history informs the next decision. Repeated identical avatars
+with numbered labels do not explain time. Keep illustrative fight snapshots
+distinct from the measurements or observations a model actually consumes.
+
+For controller selection or fallback, show the active connection to the actor
+and the unused alternative; a label pointing at a generic character is not an
+explanation. Match each visual beat to the narration. Replace the picture when
+the spoken subject changes from runtime behavior to training or evaluation.
+
+Break a long results narration into its distinct claims: test design, aggregate
+change, source of gains, regressions and remaining limits. Give each claim a
+matching visual beat. Use animated quantities and concrete task demonstrations;
+do not leave headline totals on screen while the narration explains something
+else. Keep actual values and comparable scales, including tiny regressions.
 
 Useful overlays include:
 
@@ -188,6 +236,19 @@ Prefer:
 3. then the setup.
 
 Avoid long logos, greetings, menu navigation, or background explanation before the first meaningful visual.
+
+A thought experiment or an honest “where do I start?” can establish the question
+before the first experiment. Titles and descriptions should sell the whole
+story's viewer-facing stakes, not a testing procedure or the first exercise
+alone. Do not require a viewer to know internal model/version names before
+watching. See [the Minecraft AI retrospective](MINECRAFT_AI_PRODUCTION_REVIEW.md)
+for concrete corrections and the review sequence.
+
+Calls to action should offer a specific reason to return. A short centered,
+narrated moment can fit a natural break; its placement must not cover proof or
+interrupt an explanation. Prefer the viewer's curiosity about the next challenge
+over “help my project.” Reuse approved artwork, and keep music continuous through
+the inserted moment. Frequency and duration depend on the edit, not a fixed rule.
 
 ## 11. Technical showcase pattern
 

@@ -19,11 +19,15 @@ The long-running server prints its URL rather than a JSON CLI envelope. See
 [the workspace guide](WORKSPACE.md) for optional inputs and migration.
 
 The local UI API exposes `GET /api/project`, `GET /api/script`,
-`POST /api/preview` with `{ "start": 0, "end": 15 }`, and
+`POST /api/preview` with `{ "start": 0, "end": 15, "timeline_sha256": "CURRENT_HASH" }`, and
 `GET /api/tasks/ID`. POST returns `{ "task": "ID" }` with status 202; task states
 are `queued`, `rendering`, `ready` (with `media` URL), or `failed` (with `error`).
 Registered media IDs support GET/HEAD byte ranges at `/media/ID`. These HTTP
 responses are workspace objects rather than the CLI's `ok/result` envelopes.
+`POST /api/edit` accepts `{ "expected_revision": N, "operation": OPERATION }`
+and returns the saved public project. It supports editorial, trim, reorder and
+undo operations; stale revisions return HTTP 409. The full script is derived
+from the same timeline, and previews carry that edit's revision/hash.
 
 ## Job controls
 
@@ -60,6 +64,15 @@ pipeline.py convert-scaffold SCAFFOLD NEW_TIMELINE
 `timeline-get` exposes normalized stable clip IDs and the current revision. Each edit checks that revision under an OS lock, validates the entire candidate timeline/media, saves an immutable prior revision, then atomically replaces the JSON. Conflicts fail with `stale_revision`; no change is silently rebased. Undo creates a **new** revision rather than reusing an old revision number.
 
 Supported operation JSON:
+
+```json
+{"op": "editorial", "clip_id": "intro", "fields": {"title": "The opening", "text": "New narration."}}
+```
+
+Editorial fields live on clips (see [the workspace guide](WORKSPACE.md)). Changed
+words mark narration pending, mute embedded audio previously marked as recorded,
+and detach a global voiceover and its narration captions rather than playing
+stale speech. Prior configuration remains in undo history.
 
 ```json
 {"op": "split", "clip_id": "intro", "at": 1.5}

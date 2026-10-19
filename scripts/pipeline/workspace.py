@@ -14,35 +14,25 @@ import threading
 import uuid
 
 from jsonschema import Draft202012Validator
-from .common import read_json
-from .timeline import finite_tree, load_timeline
+from .common import read_json, write_json, digest, FileLock, PipelineError
+from .editing import edit_timeline
+from .timeline import finite_tree, load_timeline, normalize
 
 WEB = Path(__file__).with_name('web')
 CLI = Path(__file__).resolve().parents[1] / 'pipeline.py'
 PATH = {'type': 'string', 'minLength': 1, 'pattern': '^[^\u0000\r\n]+$'}
 TEXT = {'type': 'string'}
-NUMBER = {'type': 'number', 'minimum': 0}
-SCENE = {
-    'type': 'object', 'additionalProperties': False,
-    'properties': {'id': PATH, 'title': TEXT, 'text': TEXT, 'start': NUMBER,
-                   'duration': {'type': 'number', 'exclusiveMinimum': 0},
-                   'media': {'type': ['string', 'null']}, 'media_in': NUMBER,
-                   'media_type': {'enum': ['video', 'image']}},
-    'required': ['id', 'title', 'text', 'start', 'duration', 'media', 'media_in']}
 WORKSPACE_SCHEMA = {
     '$schema': 'https://json-schema.org/draft/2020-12/schema',
-    'title': 'Video Edit Pipeline review workspace v1',
+    'title': 'Video Edit Pipeline single-timeline workspace v2',
     'type': 'object', 'additionalProperties': False,
     'properties': {
-        'version': {'const': 1}, 'title': {'type': 'string', 'minLength': 1},
-        'subtitle': TEXT, 'media_root': PATH, 'timeline': PATH, 'script': PATH,
-        'master': {'type': ['string', 'null']},
-        'duration': {'type': 'number', 'exclusiveMinimum': 0},
-        'scenes': {'type': 'array', 'items': SCENE, 'minItems': 1},
-        'storyboard': {'type': 'array', 'items': SCENE},
-        'assets': {'type': 'object', 'propertyNames': {'pattern': '^[A-Za-z0-9_-]+$'},
-                   'additionalProperties': PATH}},
-    'required': ['version', 'title', 'media_root', 'duration', 'scenes', 'assets']}
+        'version': {'const': 2}, 'title': {'type': 'string', 'minLength': 1},
+        'subtitle': TEXT, 'media_root': PATH, 'timeline': PATH,
+        'render': {'type': 'object', 'additionalProperties': False,
+            'properties': {'source': PATH, 'timeline_sha256': {'type': 'string', 'pattern': '^[0-9a-f]{64}$'}},
+            'required': ['source', 'timeline_sha256']}},
+    'required': ['version', 'title', 'media_root', 'timeline']}
 
 
 def project_path(path):
@@ -52,36 +42,22 @@ def project_path(path):
 
 def validate_project(project):
     finite_tree(project)
+    if project.get('version') == 1:
+        raise ValueError('Workspace v1 has independent cut/storyboard/script data. Migrate the chosen edit into one timeline; see docs/WORKSPACE.md.')
     errors = list(Draft202012Validator(WORKSPACE_SCHEMA).iter_errors(project))
     if errors:
         error = errors[0]
         raise ValueError(f'Invalid workspace {".".join(map(str, error.path))}: {error.message}')
-    def media(value):
-        if value is not None and (not value.startswith('/media/') or value[7:] not in project['assets']):
-            raise ValueError('Scene/master media must reference a registered /media/asset-id.')
-    media(project.get('master'))
-    for group in ('scenes', 'storyboard'):
-        ids = set()
-        end = 0
-        for scene in project.get(group, []):
-            if scene['id'] in ids:
-                raise ValueError('Scene IDs must be unique within each view.')
-            ids.add(scene['id'])
-            media(scene['media'])
-            if group == 'scenes':
-                if abs(scene['start'] - end) > .001:
-                    raise ValueError('Cut scenes must cover the timeline sequentially without gaps.')
-                end = scene['start'] + scene['duration']
-        if group == 'scenes' and abs(end - project['duration']) > .001:
-            raise ValueError('Scene durations must match the workspace duration.')
 
 
 def initialize(timeline_path, destination, *, script=None, master=None, title=None,
                media_root=None, narration=None):
-    """Create a manifest in a new directory, without rendering or copying media."""
+    """Bind one canonical timeline; explicit narration imports live on its clips."""
     timeline_path = Path(timeline_path).resolve()
     timeline = load_timeline(timeline_path)
     destination = Path(destination).resolve()
+    if destination.exists():
+        raise FileExistsError('Workspace already exists; its current edit was preserved.')
     root = Path(media_root).resolve() if media_root else timeline.base
     if not destination.is_relative_to(root):
         raise ValueError('Workspace directory must be inside media_root. Select --media-root explicitly.')
@@ -90,37 +66,53 @@ def initialize(timeline_path, destination, *, script=None, master=None, title=No
         if not path.is_relative_to(root) or not path.is_file():
             raise ValueError(f'Asset must be a file inside media_root: {path}. Select --media-root explicitly.')
         return str(path)
-    texts = read_json(narration) if narration else [''] * len(timeline.frames)
-    if not isinstance(texts, list) or len(texts) != len(timeline.frames) or any(not isinstance(t, str) for t in texts):
-        raise ValueError('Narration must be a JSON array with one string per timeline clip.')
-    assets = {}
-    def asset(path):
-        value = checked(path)
-        key = next((k for k, v in assets.items() if v == value), None)
-        if key is None:
-            key = f'asset-{len(assets)}'
-            assets[key] = value
-        return '/media/' + key
-    project = dict(version=1, title=title or timeline.spec.get('metadata', {}).get('title') or timeline_path.stem,
-                   media_root=str(root), timeline=checked(timeline_path), duration=timeline.duration,
-                   master=asset(master) if master else None, scenes=[], storyboard=[], assets=assets)
-    if script:
-        project['script'] = checked(script)
+    checked(timeline_path)
     for path in timeline.assets():
         checked(path)
-    offset = 0
-    for clip, frames, text in zip(timeline.spec['clips'], timeline.frames, texts):
-        project['scenes'].append(dict(id=clip['id'], title=clip['id'], text=text,
-            start=float(Fraction(offset) / timeline.fps), duration=float(Fraction(frames) / timeline.fps),
-            media=asset(timeline.asset(clip['source'])), media_in=clip['in'], media_type=clip['type']))
-        offset += frames
+    if not timeline.output.is_relative_to(root):
+        raise ValueError('Timeline output must remain inside media_root.')
+    if master:
+        checked(master)
+    if script and narration:
+        raise ValueError('Use one narration import: --script for one clip, or --narration for per-clip text.')
+    texts = None
+    if script:
+        if len(timeline.frames) != 1:
+            raise ValueError('A multi-scene script needs explicit per-clip text. Use --narration with one string per clip.')
+        texts = [Path(checked(script)).read_text(encoding='utf-8-sig')]
+    if narration:
+        texts = read_json(checked(narration))
+    if texts is not None:
+        if master:
+            raise ValueError('Import narration first, then verify an export of that timeline before binding --master.')
+        if not isinstance(texts, list) or len(texts) != len(timeline.frames) or any(not isinstance(t, str) for t in texts):
+            raise ValueError('Narration must be a JSON array with one string per timeline clip.')
+        with FileLock(timeline_path.with_name('.' + timeline_path.name + '.edit.lock'), timeout=30):
+            current = load_timeline(timeline_path)
+            if digest(current.spec) != digest(timeline.spec):
+                raise ValueError('Timeline changed during initialization. Retry with the latest edit.')
+            for clip, text in zip(timeline.spec['clips'], texts):
+                if clip.get('editorial', {}).get('text') != text and clip.get('editorial', {}).get('narration_status') == 'recorded':
+                    clip['audio'] = {'mode': 'mute'}
+                clip.setdefault('editorial', {}).update(text=text, narration_status='pending' if text else 'none')
+            audio = timeline.spec.get('audio', {})
+            if audio.pop('voiceover', None):
+                for key in ('voiceover_start', 'voiceover_source_in', 'voiceover_volume', 'ducking'):
+                    audio.pop(key, None)
+                if timeline.spec.get('captions', {}).get('kind') == 'narration':
+                    timeline.spec.pop('captions')
+            timeline.spec['revision'] += 1
+            timeline = normalize(timeline.spec, timeline.base, path=timeline_path)
+            write_json(timeline_path, timeline.spec)
+    project = dict(version=2, title=title or timeline.spec.get('metadata', {}).get('title') or timeline_path.stem,
+                   media_root=str(root), timeline=str(timeline_path))
+    if master:
+        project['render'] = dict(source=checked(master), timeline_sha256=digest(timeline.spec))
     validate_project(project)
     destination.mkdir(parents=True, exist_ok=False)
     path = destination / 'project.json'
-    with path.open('x', encoding='utf-8') as stream:
-        json.dump(project, stream, indent=2, ensure_ascii=False, allow_nan=False)
-        stream.write('\n')
-    return {'project': str(path), 'scenes': len(project['scenes']), 'duration': timeline.duration}
+    write_json(path, project)
+    return {'project': str(path), 'scenes': len(timeline.frames), 'duration': timeline.duration}
 
 
 class Workspace:
@@ -131,17 +123,11 @@ class Workspace:
         self.root = (self.path.parent / self.project['media_root']).resolve()
         if not self.root.is_dir() or not self.path.is_relative_to(self.root):
             raise ValueError('Workspace manifest must be inside its media_root directory.')
-        self.assets = {key: self.resolve(value) for key, value in self.project['assets'].items()}
-        self.script = self.resolve(self.project['script']) if self.project.get('script') else None
-        self.timeline = self.resolve(self.project['timeline']) if self.project.get('timeline') else None
-        if self.timeline:
-            timeline = load_timeline(self.timeline)
-            if abs(timeline.duration - self.project['duration']) > .001:
-                raise ValueError('Workspace duration differs from the timeline. Regenerate the manifest.')
-            for asset in timeline.assets():
-                self.resolve(asset)
+        self.timeline = self.resolve(self.project['timeline'])
+        self.assets = {}
         self.tasks = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
+        self.current()
         self.pool = ThreadPoolExecutor(max_workers=1)
 
     def resolve(self, value):
@@ -150,50 +136,125 @@ class Workspace:
             raise ValueError(f'Workspace asset is missing or outside media_root: {path}')
         return path
 
-    def public_project(self):
-        project = {k: v for k, v in self.project.items() if k not in ('assets', 'timeline', 'script', 'media_root')}
-        project.update(has_script=self.script is not None, can_preview=self.timeline is not None,
-                       workspace_id=hashlib.sha256(str(self.path).encode()).hexdigest())
-        return project
+    def check_timeline(self, timeline):
+        for asset in timeline.assets():
+            self.resolve(asset)
+        if not timeline.output.is_relative_to(self.root):
+            raise ValueError('Timeline output must remain inside media_root.')
 
-    def preview(self, start, end):
-        if not self.timeline:
-            raise ValueError('No renderable timeline is configured.')
-        if any(type(x) not in (int, float) for x in (start, end)) or not (0 <= start < end <= self.project['duration'] and end-start <= 30):
-            raise ValueError('Choose a range of up to 30 seconds inside the edit.')
+    def current(self):
+        timeline = load_timeline(self.resolve(self.timeline))
+        self.check_timeline(timeline)
+        return timeline
+
+    def asset(self, path):
+        path = self.resolve(path)
+        key = hashlib.sha256(str(path).encode()).hexdigest()[:24]
+        self.assets[key] = path
+        return '/media/' + key
+
+    def public_project(self):
         with self.lock:
+            timeline = self.current()
+            fingerprint = digest(timeline.spec)
+            scenes, offset = [], 0
+            for clip, frames in zip(timeline.spec['clips'], timeline.frames):
+                editorial = clip.get('editorial', {})
+                scenes.append(dict(id=clip['id'], title=editorial.get('title') or clip['id'],
+                    text=editorial.get('text', ''), notes=editorial.get('notes', ''),
+                    visual_status=editorial.get('visual_status', 'ready'),
+                    narration_status=editorial.get('narration_status', 'pending' if editorial.get('text') else 'none'),
+                    start=float(Fraction(offset) / timeline.fps), duration=float(Fraction(frames) / timeline.fps),
+                    media=self.asset(timeline.asset(clip['source'])), media_in=clip['in'],
+                    media_type=clip['type'], audio_mode=clip['audio']['mode']))
+                offset += frames
+            master = None
+            cached = self.project.get('render')
+            if cached and cached['timeline_sha256'] == fingerprint:
+                # Reusing an export filename must not reuse a video's in-memory
+                # buffer after a picture edit. no-store does not clear that buffer.
+                master = self.asset(cached['source']) + '?edit=' + fingerprint
+            audio = timeline.spec.get('audio', {})
+            timed = bool(timeline.spec.get('titles') or timeline.spec.get('overlays') or
+                         audio.get('voiceover') or audio.get('music') or audio.get('sfx') or timeline.spec.get('captions'))
+            return dict(version=2, title=self.project['title'], subtitle=self.project.get('subtitle', ''),
+                duration=timeline.duration, scenes=scenes, master=master,
+                revision=timeline.spec['revision'], timeline_sha256=fingerprint,
+                can_preview=True, can_reorder=not timed,
+                render_stale=bool(cached and master is None),
+                workspace_id=hashlib.sha256(str(self.path).encode()).hexdigest())
+
+    def script_text(self):
+        project = self.public_project()
+        return '\n\n'.join(f"{s['title']}\n\n{s['text']}" for s in project['scenes'] if s['text'].strip())
+
+    def edit(self, expected_revision, operation):
+        if type(expected_revision) is not int or expected_revision < 0 or not isinstance(operation, dict):
+            raise ValueError('Supply the timeline revision and an edit operation.')
+        if operation.get('op') not in ('editorial', 'trim', 'reorder', 'undo'):
+            raise ValueError('Unsupported workspace edit.')
+        with self.lock:
+            if operation['op'] == 'reorder' and not self.public_project()['can_reorder']:
+                raise ValueError('This edit has timed audio/graphics. Reorder their anchors explicitly through the timeline editor first.')
+            edit_timeline(self.resolve(self.timeline), expected_revision, operation, validator=self.check_timeline)
+            return self.public_project()
+
+    def preview(self, start, end, expected_hash):
+        with self.lock:
+            timeline = self.current()
+            fingerprint = digest(timeline.spec)
+            if expected_hash != fingerprint:
+                raise ValueError('Timeline changed. Reload the current edit before building a preview.')
+            if any(type(x) not in (int, float) for x in (start, end)) or not (0 <= start < end <= timeline.duration and end-start <= 30):
+                raise ValueError('Choose a range of up to 30 seconds inside the edit.')
             if any(t['status'] in ('queued', 'rendering') for t in self.tasks.values()):
                 raise ValueError('A preview is already building. Wait for it to finish.')
             if len(self.tasks) >= 100:
                 raise ValueError('This session has reached 100 previews. Restart the workspace for a new session.')
             key = uuid.uuid4().hex
-            self.tasks[key] = dict(status='queued', start=start, end=end)
-            self.pool.submit(self.render, key, start, end)
+            directory = self.path.parent / 'previews'
+            if not directory.resolve().is_relative_to(self.root):
+                raise ValueError('Preview directory is outside media_root.')
+            directory.mkdir(exist_ok=True)
+            # Freeze this edit before queuing. Saves during rendering cannot change it.
+            spec = copy.deepcopy(timeline.spec)
+            for clip in spec['clips']:
+                clip['source'] = str(timeline.asset(clip['source']))
+                if clip.get('transcript'):
+                    clip['transcript'] = str(timeline.asset(clip['transcript']))
+            for group in ('overlays', 'titles'):
+                for item in spec.get(group, []):
+                    for field in ('source', 'font'):
+                        if item.get(field): item[field] = str(timeline.asset(item[field]))
+            audio = spec.get('audio', {})
+            if audio.get('voiceover'): audio['voiceover'] = str(timeline.asset(audio['voiceover']))
+            for kind in ('music', 'sfx'):
+                for track in audio.get(kind, []): track['source'] = str(timeline.asset(track['source']))
+            if spec.get('captions', {}).get('transcript'):
+                spec['captions']['transcript'] = str(timeline.asset(spec['captions']['transcript']))
+            spec['output'] = str(timeline.output)
+            snapshot = directory / (key + '.json')
+            write_json(snapshot, spec)
+            self.tasks[key] = dict(status='queued', start=start, end=end,
+                revision=timeline.spec['revision'], timeline_sha256=fingerprint)
+            self.pool.submit(self.render, key, start, end, snapshot)
         return key
 
-    def render(self, key, start, end):
-        output = self.path.parent / 'previews' / f'{key}.mp4'
+    def render(self, key, start, end, snapshot):
+        output = snapshot.with_suffix('.mp4')
         with self.lock:
             self.tasks[key]['status'] = 'rendering'
         try:
-            # Check current paths again; a changed symlink or timeline cannot widen access.
-            timeline = load_timeline(self.resolve(self.timeline))
-            for asset in timeline.assets():
-                self.resolve(asset)
-            if abs(timeline.duration - self.project['duration']) > .001:
-                raise ValueError('Timeline duration changed. Regenerate the workspace manifest.')
-            if not output.resolve().is_relative_to(self.root):
-                raise ValueError('Preview directory is outside media_root.')
-            output.parent.mkdir(exist_ok=True)
-            process = subprocess.run([sys.executable, str(CLI), 'preview', str(self.timeline),
+            timeline = load_timeline(self.resolve(snapshot))
+            self.check_timeline(timeline)
+            process = subprocess.run([sys.executable, str(CLI), 'preview', str(snapshot),
                 '--start', str(start), '--end', str(end), '--output', str(output)],
                 capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
             envelope = json.loads(process.stdout)
             if process.returncode or not envelope.get('ok') or not output.is_file():
                 raise ValueError(str(envelope.get('error', 'Preview failed')))
             with self.lock:
-                self.assets[key] = output
-                self.tasks[key].update(status='ready', media='/media/' + key)
+                self.tasks[key].update(status='ready', media=self.asset(output))
         except Exception as exc:
             with self.lock:
                 self.tasks[key].update(status='failed', error=str(exc)[:1000])
@@ -281,13 +342,14 @@ def handler(workspace):
                 return self.json({'error': 'Local workspace only'}, 403)
             path = self.path.split('?', 1)[0]
             if path == '/api/project':
-                return self.json(workspace.public_project())
+                try:
+                    return self.json(workspace.public_project())
+                except (ValueError, OSError, PipelineError) as exc:
+                    return self.json({'error': str(exc)}, 409)
             if path == '/api/script':
                 try:
-                    if workspace.script is None:
-                        raise ValueError('No full script configured for this workspace.')
-                    return self.json({'text': workspace.resolve(workspace.script).read_text(encoding='utf-8-sig')})
-                except (ValueError, OSError, UnicodeError) as exc:
+                    return self.json({'text': workspace.script_text()})
+                except (ValueError, OSError, UnicodeError, PipelineError) as exc:
                     return self.json({'error': str(exc)}, 404)
             if path.startswith('/api/tasks/'):
                 with workspace.lock:
@@ -305,16 +367,22 @@ def handler(workspace):
         def do_POST(self):
             if not self.valid_request():
                 return self.json({'error': 'Local workspace only'}, 403)
-            if self.path != '/api/preview':
+            if self.path not in ('/api/preview', '/api/edit'):
                 return self.json({'error': 'Not found'}, 404)
             try:
                 size = int(self.headers.get('Content-Length', '0'))
-                if not 0 < size <= 4096 or self.headers.get('Transfer-Encoding'):
+                if not 0 < size <= 131072 or self.headers.get('Transfer-Encoding'):
                     raise ValueError('Invalid request size')
                 self.connection.settimeout(5)
                 body = json.loads(self.rfile.read(size))
-                key = workspace.preview(body.get('start'), body.get('end'))
+                if not isinstance(body, dict):
+                    raise ValueError('Expected a JSON object.')
+                if self.path == '/api/edit':
+                    return self.json(workspace.edit(body.get('expected_revision'), body.get('operation')))
+                key = workspace.preview(body.get('start'), body.get('end'), body.get('timeline_sha256'))
                 return self.json({'task': key}, 202)
+            except PipelineError as exc:
+                return self.json({'error': str(exc), 'code': exc.code}, 409 if exc.code == 'stale_revision' else 400)
             except (ValueError, TypeError, AttributeError, OSError) as exc:
                 return self.json({'error': str(exc)}, 400)
     return Handler

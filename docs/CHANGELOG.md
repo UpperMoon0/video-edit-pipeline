@@ -2,8 +2,20 @@
 
 ## Unreleased
 
+Replace competing cut/storyboard views with one canonical timeline per workspace.
+Workspace v2 derives scene text, duration, navigation and the full script from
+timeline clips. Add scene script/trim/reorder editing with revision conflicts and
+undo, draft/recording status, hash-bound exports and immutable range-preview
+snapshots. Legacy v1 manifests require an explicit choice and migration. Pending
+narration is visible; text changes invalidate recorded voice and prior previews.
+
+Document reusable offline replay motion checks: authoritative simulation timing,
+entity/camera interpolation, a short 60 fps sample before batch export, and audio
+alignment. Distinguish constant output fps from smooth recorded movement; replay
+retiming and automated motion checks remain proposed work.
+
 Move the local video review UI into reusable pipeline source. Add project-driven
-playback, scene/storyboard navigation, complete-script reading/copy/download, and
+playback, timeline scene navigation, complete-script reading/copy/download, and
 bounded range previews. Add `workspace-init`, a shared server and Windows launcher,
 a versioned workspace manifest contract, setup/migration guidance and synthetic
 HTTP/render regressions. Project media, scripts and generated workspaces stay private.

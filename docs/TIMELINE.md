@@ -44,6 +44,12 @@ All relative asset and output paths resolve against the timeline JSON, never the
 
 Clips are sequential. Video `in` is a source-media timestamp; `duration` is timeline duration. Preflight uses the selected video stream, not a longer narration/container stream, to validate source bounds. Container time-base rounding is allowed only as metadata precision tolerance; each normalized cut still has to decode to the exact expected frame count. There is no implicit freeze-frame/loop extension to conceal missing footage. Still-image clips use `type: "image"`, require `in: 0`, and last their declared frame-grid duration. `zoom` is a centered zoom factor from 1 to 8.
 
+Optional clip `editorial` fields hold `title`, `text`, `notes`, `visual_status`
+(`draft`/`ready`) and `narration_status` (`pending`/`recorded`/`none`). They drive
+the single-timeline workspace's scene editor and script view; they do not generate
+speech or add visible titles automatically. Pending scenes can be previewed
+without being mistaken for finished narration. See [workspace editing](WORKSPACE.md).
+
 Ranges for overlays, titles, music, and SFX must be positive and contained in the quantized edit. Each fade is at most half its original track/event duration. Explicit coordinates are numeric; named placement uses `center`, `left`, `right`, `top`, or `bottom`. Arbitrary filter expressions are not accepted. Title text is written to UTF-8 files with FFmpeg text expansion disabled; a local per-title `font` or `PIPELINE_FONT` overrides the platform fallback.
 
 ## Audio

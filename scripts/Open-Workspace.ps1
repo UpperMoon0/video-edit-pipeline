@@ -26,6 +26,9 @@ if ($running) {
     if ($running.workspace_id -ne $expected.workspace_id) {
         throw "Port $Port is serving another workspace. Choose a different -Port; the existing server was preserved."
     }
+    if ($running.version -ne $expected.version) {
+        throw "Port $Port is running an older workspace API. Restart this workspace's owned server to load the updated pipeline code."
+    }
 } else {
     $workspaceDirectory = Split-Path $projectPath -Parent
     $serverProcess = Start-Process -FilePath $pythonPath -ArgumentList @(

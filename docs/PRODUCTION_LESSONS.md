@@ -1,6 +1,8 @@
 # Production lessons and a faster workflow
 
-Reviewed 2026-10-07 after the Endless showcase. These are reusable production
+Reviewed 2026-10-07 after the Endless showcase; replay motion guidance added
+2026-10-18; Minecraft AI editorial and efficiency retrospective added 2026-10-19.
+These are reusable production
 rules, not a claim that the pipeline already automates every check below.
 Project footage, prompts, scripts, credentials, world data and QA receipts stay
 in private job workspaces.
@@ -47,6 +49,21 @@ Do not invent those conclusions from revision counts or export success.
 
 ## Workflow for the next video
 
+For the creator's detailed corrections during the Minecraft AI video, read
+[the 2026-10-19 production review](MINECRAFT_AI_PRODUCTION_REVIEW.md).
+Its key additions are viewer-first hooks and packaging, concrete rather than
+decorative graphics, continuous audio through picture revisions, meaningful
+gameplay demonstrations, and centered spoken CTAs with a reason to return.
+The review also separates working practices from pipeline improvements still
+to implement; it makes no measured engagement or time-saved claims.
+
+Maintain one canonical timeline per workspace, including draft scenes and their
+narration. Revise that edit as work progresses; do not keep an older assembled cut
+and a separate current storyboard as parallel active versions. Full-script views
+and previews must use that timeline. Keep earlier exports only as history, mark
+missing narration/visuals explicitly, and invalidate exports when the edit changes.
+See [the workspace contract](WORKSPACE.md).
+
 1. **Lock the promise and creative direction.** Write one clear viewer-facing
    claim, an opening hook, proof and a short call to action. Confirm music, voice,
    logo and transition style. Use the speaker's chosen pronouns consistently.
@@ -71,6 +88,8 @@ Do not invent those conclusions from revision counts or export success.
    presets and source provenance. In the same batch, capture wide, ground-up,
    crown and lighting variants for thumbnails and documentation. Inspect every
    exported image/clip for black frames, occlusion and framing.
+   For replay footage, also pass the motion checks below before a recording or
+   export batch; a successful encode does not establish smooth movement.
 6. **Generate narration in short sections.** Keep a consistent voice and settings,
    review each section for pronunciation and tone, and regenerate only failed
    sections. Measure actual durations before final timing. Preserve complete
@@ -99,6 +118,101 @@ Do not invent those conclusions from revision counts or export success.
     restore only settings changed by the job, and close only owned processes.
     Record reusable findings separately from private project data.
 
+## Review animated layouts before delivery
+
+A successful encode does not establish a readable explanation. Inspect every
+distinct graphic state at full output size, including the frames immediately
+before and after state changes. Sample moving elements at their travel limits.
+Review actual composed chapter frames as well as source drawings.
+
+Give character art, labels, values and diagrams separate space. Connectors should
+have clear endpoints and avoid crossing text or character art; remove a connector
+when grouping or one highlighted readout communicates the relationship more
+clearly. Check small repeated panels separately: shrinking the container without
+shrinking and spacing both characters can make them overlap.
+
+Where the renderer exposes geometry, check actual font bounds, sprite bounds,
+connector paths and safe-frame margins throughout the rendered animation. These
+checks supplement visual review; they do not establish narrative clarity or
+replace inspecting the finished picture in the viewer.
+
+## Smooth offline replay footage
+
+Offline rendering should make output timing independent of rendering speed.
+A slow machine may take longer to export each frame; that alone should not
+cause pauses in the finished video. A replay normally reconstructs recorded
+client-visible updates, rather than rerunning the original AI and server
+simulation. Evenly spaced output frames can therefore reproduce uneven source
+updates. A constant frame rate in FFprobe is not proof of smooth action.
+
+For future gameplay videos:
+
+1. **Define the simulation clock before recording.** Record an authoritative
+   tick index and its relationship to replay timestamps. For a normal Minecraft
+   simulation at 20 ticks per second, tick `n` belongs at `n * 50 ms` relative
+   to the simulation start. Preserve deliberately different tick rates and
+   intentional pauses as explicit choices. Manually stepping a simulation and
+   sleeping between requests does not guarantee evenly timed recorded updates.
+2. **Preserve enough timing information to reconstruct motion.** If input or
+   recording runs behind, use the authoritative tick mapping to place updates
+   on the intended timeline. Preserve packet/event order and align sound,
+   effects, markers and camera paths to the same clock. Simply speeding up an
+   entire clip does not remove irregular gaps between updates. If an existing
+   recording lacks a reliable mapping, establish one or make a new recording
+   before claiming its timing has been corrected.
+3. **Verify interpolation, then choose output fps.** Confirm that the replay
+   advances fractional ticks and interpolates entity movement and camera motion
+   correctly. Check abrupt movement updates and camera keyframe boundaries.
+   Use 60 fps as the target for smooth gameplay footage unless the delivery
+   calls for another rate. Raising fps alone, duplicating frames or applying
+   optical flow does not establish correct simulation timing.
+4. **Review a short moving sample before the batch.** Include a camera pan,
+   lateral character movement and a combat impact. Inspect normal playback and
+   consecutive frames for unintended holds, jumps, uneven cadence and audio
+   drift; account separately for intentional pauses and end-frame holds. Verify
+   both the exported file and browser playback. Separate source motion problems
+   from player decoding problems rather than assuming either is the cause.
+5. **Keep evidence and preserve previous footage.** Retain the clock mapping,
+   export settings and sample review result in the private job. Only regenerate
+   the remaining shots after the sample passes, and keep previous approved
+   exports until replacements pass review.
+
+This is production guidance and deferred implementation work, not a claim that
+the pipeline currently retimes replay packets or automatically validates motion
+cadence. Full decode, black-frame checks and correct frame counts remain useful,
+but do not replace reviewing motion.
+
+### Rerecording a stalled observer replay
+
+A recorder that assigns timestamps on the client main thread can turn a client
+stall into a long hold followed by many movement updates at once. Warm the
+arena and shaders before movement, reduce the recording viewport and view
+distance, and let the observer acknowledge work between simulation steps.
+Offline export can still use full resolution and the intended shader settings.
+Check the new packet cadence and compare every native tick with the original
+run before replacing footage. Exclude a deliberate stationary tail from missing
+movement checks, but retain checks for internal gaps and bursts. Preserve the
+old take and review the exported route through obstacles, not just the outcome.
+These checks may be implemented by a private capture adapter; they are not a
+general built-in pipeline motion validator.
+
+### Keep music continuous through picture trims
+
+Removing a quiet gameplay interval should not remove the same samples from a
+precomposed music bed. That produces an audible jump even when speech and
+picture remain aligned. Keep song phase independent of picture cuts, rebuild
+from uninterrupted source spans for the current duration, and crossfade changes
+between songs. Duck against the current narration placements rather than an old
+speech bed whose timings preceded the trim. Keep speech complete and check the
+new full mix after delivery.
+
+For the Minecraft production, the repaired music uses the three supplied songs
+with 2.5-second equal-power transitions. A source-sample comparison across the
+previous picture trim verifies that the first song remains uninterrupted; a
+full-length silence scan and final-mix decode/loudness checks cover delivery.
+This is a private production recipe, not a general automatic music-editing
+feature in the pipeline UI.
+
 ## Improvements to implement next
 
 These are proposed development priorities, not existing CLI options:
@@ -109,6 +223,7 @@ These are proposed development priorities, not existing CLI options:
 | 1 | An audio-only delivery path that preserves picture and runs final-mix QA. | Encoded picture stream identity, successful full decode and the expected changed audio are verified. |
 | 2 | Shot context/evidence anchors and a ripple preview for voice, overlays and music. | Extending a line keeps its proof visible and updates later anchors consistently. |
 | 2 | A capture adapter with cheap previews, black-frame detection and bounded recovery. | Bad captures cannot become approved assets solely because the capture request succeeded; retries remain limited to owned sessions. |
+| 2 | Replay timing provenance and a short motion review before batch export. | A deliberately uneven source-update fixture is distinguished from valid constant-fps output; a verified tick mapping preserves event order and audio alignment, and a moving 60 fps sample passes review before a full batch. |
 | 2 | Upload preflight and durable resumable transfer recovery in an optional publishing adapter. | Expired/wrong-channel authorization is detected before transfer; interruption resumes the same upload without duplicate publication. |
 | 3 | A local stage record for creative approval, recording, narration, draft, master QA and delivery. | Invalidated approvals are visible after edits, and unchanged artifacts are reused by verified identity. |
 
@@ -121,10 +236,12 @@ document does not establish new schema fields or automated approval gates.
 
 ## Packaging and image lessons
 
-Use actual footage as the foundation for thumbnails. Keep one legible subject
-and a clear visual promise, without assigning a height or capability to a scene
-that does not demonstrate it. Generated banner art can stylize a reference;
-demonstration images should accurately show the captured result. Review logo
+Ground thumbnail concepts in actual footage and the video's story. A stylized
+generated illustration can communicate a truthful learning or transformation
+idea, but must not pretend to be a proof screenshot or imply an unshown victory.
+Keep one legible subject and a clear visual promise, without assigning a height
+or capability to a scene that does not demonstrate it. Generated banner art can
+stylize a reference; demonstration images should accurately show the captured result. Review logo
 spelling, transparency and readability at the intended display size.
 
 Capture reusable art early, but package only the approved versions. For public

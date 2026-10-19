@@ -48,6 +48,11 @@ See [timeline format and examples](docs/TIMELINE.md), [the JSON CLI and editing 
 
 For filming, narration, review and delivery planning, see [production lessons and a faster workflow](docs/PRODUCTION_LESSONS.md), including avoidable rework and proposed pipeline improvements.
 
+The [Minecraft AI production review](docs/MINECRAFT_AI_PRODUCTION_REVIEW.md)
+records creator corrections on hooks, visual explanations, gameplay capture,
+audio continuity, CTAs, packaging and faster revisions, with a checklist for the
+next video.
+
 ## Reproducible synthetic examples
 
 Generate fixtures in a **new or empty directory outside the checkout**. Existing files are never overwritten by the fixture generator.
@@ -93,26 +98,28 @@ Prioritize readable action, story clarity and proof, then sound and music.
 Clean cuts and natural source audio are the default. Synthetic transition
 whooshes and risers require an explicit request.
 
-The shared browser workspace provides video playback, scene navigation, a storyboard,
-complete-script reading/copy/download, and pipeline range previews. Its UI and server
-live in the repository; each video supplies a private project manifest.
+Each shared browser workspace has one canonical timeline. Scene text, source
+ranges, scene order, the complete script and range previews all follow that edit.
+Edit narration, trim or reorder supported scenes, and see unfinished work clearly.
+Older exports cannot override a changed timeline. The UI and server live in this
+repository; each video supplies a private project manifest.
 
 ```powershell
-python scripts/pipeline.py workspace-init 'C:\Media\Episode\timeline.json' 'C:\Media\Episode\review' --script 'C:\Media\Episode\script.txt' --title 'My episode'
+python scripts/pipeline.py workspace-init 'C:\Media\Episode\timeline.json' 'C:\Media\Episode\review' --title 'My episode'
 python scripts/workspace.py 'C:\Media\Episode\review' --port 8766
 # Windows: start in the background and open the browser
 .\scripts\Open-Workspace.ps1 -Project 'C:\Media\Episode\review' -Port 8766
 ```
 
 See [browser workspace setup and project format](docs/WORKSPACE.md). Initializing a
-workspace reads the timeline without rendering or copying footage. An existing full
-cut, per-scene narration, and storyboard are optional. Project data and scripts stay
-local and ignored by Git.
+workspace reads the timeline without rendering or copying footage. Narration text
+lives on its clips, with draft/recording status. Project data and scripts stay local
+and ignored by Git. See the workspace guide for migrating the old two-view format.
 
 Review short ranges with `python scripts/pipeline.py preview TIMELINE --start 0 --end 15`
 before exporting a complete video. These fast, low-resolution previews preserve
-the timeline's frame selection. The browser workspace reviews existing timeline data;
-timeline editing remains available through the JSON CLI.
+the timeline's frame selection. The browser scene editor and JSON CLI update the
+same revisioned timeline; unsupported changes to timed layers fail explicitly.
 
 ## Privacy, licensing, contribution
 

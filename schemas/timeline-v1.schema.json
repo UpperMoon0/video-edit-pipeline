@@ -113,6 +113,38 @@
             "type": "string",
             "minLength": 1,
             "pattern": "^[^\\u0000\\r\\n]+$"
+          },
+          "editorial": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 100000
+              },
+              "visual_status": {
+                "enum": [
+                  "draft",
+                  "ready"
+                ]
+              },
+              "narration_status": {
+                "enum": [
+                  "pending",
+                  "recorded",
+                  "none"
+                ]
+              },
+              "notes": {
+                "type": "string",
+                "maxLength": 10000
+              }
+            },
+            "required": [],
+            "additionalProperties": false
           }
         },
         "required": [

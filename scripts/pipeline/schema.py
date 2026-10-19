@@ -32,9 +32,14 @@ TEXT = {'type': 'string', 'minLength': 1, 'maxLength': 10000}
 POSITION = {'anyOf': [number(-32768, 32768), choice('center', 'left', 'right', 'top', 'bottom',
     '(main_w-overlay_w)/2', '(main_h-overlay_h)/2')]}
 AUDIO_POLICY = obj({'mode': choice('mute', 'preserve'), 'stream': integer(0, 63), 'gain': number(0, 16)})
+EDITORIAL = obj({'title': {'type': 'string', 'maxLength': 1000},
+    'text': {'type': 'string', 'maxLength': 100000},
+    'visual_status': choice('draft', 'ready'),
+    'narration_status': choice('pending', 'recorded', 'none'),
+    'notes': {'type': 'string', 'maxLength': 10000}})
 CLIP = obj({'id': PATH, 'source': PATH, 'type': choice('video', 'image'), 'in': number(),
     'duration': number(0, 86400, True), 'zoom': number(1, 8), 'audio': AUDIO_POLICY,
-    'transcript': PATH, 'asset_id': PATH}, ['source', 'duration'])
+    'transcript': PATH, 'asset_id': PATH, 'editorial': EDITORIAL}, ['source', 'duration'])
 TRACK_FIELDS = {'source': PATH, 'start': number(), 'source_in': number(), 'volume': number(0, 16),
     'fade_in': number(), 'fade_out': number()}
 OVERLAY = obj({'source': PATH, 'start': number(), 'duration': number(0, 86400, True),

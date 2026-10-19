@@ -2,10 +2,13 @@
 
 ## Required suite
 
-`test_workspace.py` checks reusable workspace creation, rational scene timing,
-optional script/storyboard/master inputs, manifest validation, shared static assets,
-full-script freshness, HTTP Host/Origin and media range boundaries, preview admission,
-the Git privacy allowlist, and a real synthetic-media preview through the JSON CLI.
+`test_workspace.py` checks single-timeline workspace creation, rational scene timing,
+explicit text imports, rejection of independent storyboard/script fields, shared
+static assets, canonical script freshness, stale-export invalidation (even without
+a revision bump), HTTP Host/Origin and media range boundaries, current-hash preview
+admission and immutable snapshots. Real-media cases exercise saved script edits,
+stale-write conflicts, trim/reorder/undo, detaching old voice on changed words, and
+a composed range preview through the JSON CLI. It also checks the Git privacy allowlist.
 The symlink replacement case requires host symlink privileges; rendering never skips
 for missing FFmpeg. UI changes should also be reviewed in a browser using a synthetic
 project as well as any locally migrated project.
