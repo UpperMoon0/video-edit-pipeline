@@ -2,10 +2,15 @@
 
 Reviewed 2026-10-07 after the Endless showcase; replay motion guidance added
 2026-10-18; Minecraft AI editorial and efficiency retrospective added 2026-10-19.
+Minecraft Shorts capture, revision, loop and upload lessons added 2026-10-21.
 These are reusable production
 rules, not a claim that the pipeline already automates every check below.
 Project footage, prompts, scripts, credentials, world data and QA receipts stay
 in private job workspaces.
+
+See the [Minecraft Shorts review](MINECRAFT_SHORTS_PRODUCTION_REVIEW.md) for
+recorded-scene camera/actor checks, DH coverage, selective retakes, looping edits
+and the creator's AI-disclosure preference.
 
 ## What the production demonstrated
 

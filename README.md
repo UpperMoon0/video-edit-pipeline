@@ -53,6 +53,11 @@ records creator corrections on hooks, visual explanations, gameplay capture,
 audio continuity, CTAs, packaging and faster revisions, with a checklist for the
 next video.
 
+For native gameplay Shorts, see the
+[Minecraft Shorts production review](docs/MINECRAFT_SHORTS_PRODUCTION_REVIEW.md):
+replay geometry and camera clearance, distant terrain, modular retakes, looping
+music, and upload/disclosure decisions.
+
 ## Reproducible synthetic examples
 
 Generate fixtures in a **new or empty directory outside the checkout**. Existing files are never overwritten by the fixture generator.

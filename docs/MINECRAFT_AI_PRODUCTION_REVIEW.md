@@ -149,6 +149,8 @@ they must make sense before watching. Review title/thumbnail together at phone
 size. Use a clear visual promise and readable minimal text, without claiming
 unproved human superiority. Initial platform checks are not a guarantee against
 later claims or restrictions. Public publication is a separate visibility action.
+For replay geometry, seamless Shorts and content-specific AI-disclosure decisions,
+see the [Minecraft Shorts review](MINECRAFT_SHORTS_PRODUCTION_REVIEW.md).
 
 ## 7. Improvements still to implement or validate
 
