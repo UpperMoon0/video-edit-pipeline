@@ -102,6 +102,10 @@ Scaffold conversion requires an unused destination and an unambiguous source. No
 
 ## Footage evidence
 
+For the preferred whole-video editorial workflow and reusable segment context
+record, see [persistent raw-footage indexing](FOOTAGE_INDEXING.md). Semantic
+descriptions and tag search in that workflow are not current CLI features.
+
 ```text
 pipeline.py sample SOURCE OUTPUT_DIRECTORY --interval 10 --start 0 --end 0 --columns 4 --rows 4 --width 320
 pipeline.py index SOURCE --index LOCAL_INDEX.sqlite3 [--transcript TRANSCRIPT.json] [--samples index.json] [--threshold 0.3]

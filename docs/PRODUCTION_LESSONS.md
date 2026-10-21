@@ -54,6 +54,13 @@ Do not invent those conclusions from revision counts or export success.
 
 ## Workflow for the next video
 
+For supplied raw footage, first follow [persistent context indexing](FOOTAGE_INDEXING.md):
+save small source-timed segments covering the entire video, with factual context,
+dialogue, dependencies and review coverage. Reuse that private record for future
+clip requests; inspect candidate cut boundaries instead of reanalyzing the whole
+source. This is a workflow requirement; semantic indexing is not yet automated
+by the existing shot/transcript CLI.
+
 For the creator's detailed corrections during the Minecraft AI video, read
 [the 2026-10-19 production review](MINECRAFT_AI_PRODUCTION_REVIEW.md).
 Its key additions are viewer-first hooks and packaging, concrete rather than

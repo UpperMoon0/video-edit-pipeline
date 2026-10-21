@@ -48,6 +48,11 @@ See [timeline format and examples](docs/TIMELINE.md), [the JSON CLI and editing 
 
 For filming, narration, review and delivery planning, see [production lessons and a faster workflow](docs/PRODUCTION_LESSONS.md), including avoidable rework and proposed pipeline improvements.
 
+For reusable raw footage, follow the [persistent context indexing workflow](docs/FOOTAGE_INDEXING.md):
+record small source-timed segments across the whole video once, then reuse their
+context to find clips. The guide separates existing shot/transcript evidence
+from semantic indexing still to implement.
+
 The [Minecraft AI production review](docs/MINECRAFT_AI_PRODUCTION_REVIEW.md)
 records creator corrections on hooks, visual explanations, gameplay capture,
 audio continuity, CTAs, packaging and faster revisions, with a checklist for the
