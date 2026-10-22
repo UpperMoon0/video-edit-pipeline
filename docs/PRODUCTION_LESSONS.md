@@ -12,6 +12,10 @@ See the [Minecraft Shorts review](MINECRAFT_SHORTS_PRODUCTION_REVIEW.md) for
 recorded-scene camera/actor checks, DH coverage, selective retakes, looping edits
 and the creator's AI-disclosure preference.
 
+See the [GTNH Shorts review](GTNH_SHORTS_PRODUCTION_REVIEW.md), added 2026-10-22,
+for process-first progression, narration-to-recipe alignment, moving UI proof,
+replay pipe-state validation, gentle soundtracks and verified raw-source cleanup.
+
 ## What the production demonstrated
 
 - Short, independently replaceable shots made late revisions practical. The
@@ -232,7 +236,7 @@ These are proposed development priorities, not existing CLI options:
 | Priority | Pipeline improvement | Completion evidence |
 | --- | --- | --- |
 | 1 | Narration scheduling that defaults to complete native-speed takes, checks overlap and reports insufficient visual handles before export. | A synthetic long-voice fixture extends suitable visuals or fails clearly, without dropping samples or silently accelerating speech. |
-| 1 | An audio-only delivery path that preserves picture and runs final-mix QA. | Encoded picture stream identity, successful full decode and the expected changed audio are verified. |
+| 1 | General timeline/UI audio-only delivery beyond the bounded karaoke command below. | Preserve the karaoke command's picture packet identity, full decode and changed-audio checks when integrating more timeline types. |
 | 2 | Shot context/evidence anchors and a ripple preview for voice, overlays and music. | Extending a line keeps its proof visible and updates later anchors consistently. |
 | 2 | A capture adapter with cheap previews, black-frame detection and bounded recovery. | Bad captures cannot become approved assets solely because the capture request succeeded; retries remain limited to owned sessions. |
 | 2 | Replay timing provenance and a short motion review before batch export. | A deliberately uneven source-update fixture is distinguished from valid constant-fps output; a verified tick mapping preserves event order and audio alignment, and a moving 60 fps sample passes review before a full batch. |
@@ -245,6 +249,17 @@ Use the [editorial guide](EDITORIAL_GUIDE.md),
 [operations/recovery](OPERATIONS.md) alongside these production checks.
 Add regression coverage when the proposals become implementation changes; this
 document does not establish new schema fields or automated approval gates.
+
+### Karaoke production now available
+
+The bounded audio-only export in `scripts/karaoke.py remux` now implements this
+delivery need for constant-frame-rate, 16:9 karaoke masters: it copies video
+packets, verifies picture packet identity, checks replacement audio length and
+fully decodes the result before publishing. General timeline/UI music editing
+remains separate work. See [the karaoke guide](KARAOKE.md) for reusable lyric
+timing, the subtitle panel, instrumental setup, source attribution and upload
+checks. Use “Vocals reduced for karaoke” in public descriptions; technical
+model/provider details belong in private production evidence.
 
 ## Packaging and image lessons
 

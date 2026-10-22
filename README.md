@@ -48,6 +48,14 @@ See [timeline format and examples](docs/TIMELINE.md), [the JSON CLI and editing 
 
 For filming, narration, review and delivery planning, see [production lessons and a faster workflow](docs/PRODUCTION_LESSONS.md), including avoidable rework and proposed pipeline improvements.
 
+For sing-along and instrumental karaoke videos, use the
+[reusable karaoke workflow](docs/KARAOKE.md). `scripts/karaoke.py` creates private
+projects, aligns supplied Chinese lyrics, builds English-over-pinyin subtitles
+with a rounded dark panel, renders previews/masters, and creates instrumental
+variants by replacing audio while verifying unchanged picture packets. The
+optional separator uses local UVR MDX models with an explicit CPU, DirectML or
+CUDA provider; no models, packages or uploads are downloaded automatically.
+
 For reusable raw footage, follow the [persistent context indexing workflow](docs/FOOTAGE_INDEXING.md):
 record small source-timed segments across the whole video once, then reuse their
 context to find clips. The guide separates existing shot/transcript evidence
@@ -62,6 +70,10 @@ For native gameplay Shorts, see the
 [Minecraft Shorts production review](docs/MINECRAFT_SHORTS_PRODUCTION_REVIEW.md):
 replay geometry and camera clearance, distant terrain, modular retakes, looping
 music, and upload/disclosure decisions.
+
+The [GTNH Shorts review](docs/GTNH_SHORTS_PRODUCTION_REVIEW.md) adds process-first
+stories, recipe/UI evidence, replay machine-state checks, restrained music and
+voice direction, preview-first revisions and source retention after publication.
 
 ## Reproducible synthetic examples
 

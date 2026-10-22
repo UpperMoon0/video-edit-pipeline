@@ -7,6 +7,10 @@ Keep footage, world snapshots, prompts, upload receipts and credentials in the
 private job. Read this with the [production workflow](PRODUCTION_LESSONS.md),
 [editorial guide](EDITORIAL_GUIDE.md) and [canonical timeline contract](WORKSPACE.md).
 
+The later [GTNH Shorts review](GTNH_SHORTS_PRODUCTION_REVIEW.md) covers the
+2026-10-22 machine-progression episodes: process coverage, recipe/UI evidence,
+replay connection state, series branding, restrained audio and source cleanup.
+
 ## 1. Make the premise and picture agree
 
 | Creator correction | Reusable decision |

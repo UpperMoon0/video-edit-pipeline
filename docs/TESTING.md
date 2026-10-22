@@ -42,6 +42,15 @@ Direct dependencies are pinned in the requirements files. Core CI validates the 
 
 ## Extending coverage
 
+`test_karaoke.py` covers cue/syllable bounds, stale timing identities, plain-text
+ASS escaping, description wording and source roles, schema equality, private
+build reuse, real FFmpeg previews and panel visibility, decoded audio changes,
+picture packet identity during audio-only export, input aliases and preservation
+of a previous master when QA fails. Synthetic fixtures contain original short
+English lines and generated tones, never downloaded music or real lyrics.
+Normal CI does not download or run alignment/separation models. CPU/DirectML/CUDA
+provider quality and compatibility require separate local verification.
+
 `test_review_regressions.py` adds the review's change/fail/restore/rerender cache sequence with decoded red/green picture and 440/880 Hz audio checks, mutation-and-restoration during the real encoder call, legacy pathname reuse and duplicate historical jobs, and every-frame split/preview color equivalence for 24 fps, 2 fps, and VFR footage on a 30 fps timeline (including a non-grid source in). Only mutation timing is hooked; FFmpeg, hashes, SQLite, and publication are real.
 
 Preserve failing-case tests when fixing bugs. An accepted source range must also produce the required decoded frames. A valid output file must still have the correct streams, audio duration, and late-track energy. A failed render must preserve both source hashes and the previous deliverable. A registry test must use independent processes when testing interprocess ownership; an in-memory mock cannot prove it.

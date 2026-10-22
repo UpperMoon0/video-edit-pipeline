@@ -76,6 +76,17 @@ selection. No measured speedup is claimed. Final clip-boundary checks remain
 useful; full reindexing should be reserved for invalidated or insufficient
 coverage.
 
+## Source deletion and availability
+
+Keep originals by default. If the user authorizes deleting specific recordings,
+finish the required delivery verification first, retain selected shot assets and
+the index, and record the exact deleted source identities and recovered bytes.
+Mark their availability in both the source manifest and context index; retained
+timecodes and descriptions do not make deleted footage available for new clips.
+An original replay and a first-person recording are separate sources, even when
+they show the same session. Do not delete both under an ambiguous raw-video label.
+See the [GTNH cleanup lessons](GTNH_SHORTS_PRODUCTION_REVIEW.md#retain-enough-to-reuse-the-edit).
+
 ## Current implementation boundary
 
 See [the footage evidence API](API.md#footage-evidence). The current SQLite index

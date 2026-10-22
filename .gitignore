@@ -6,6 +6,7 @@
 !/LICENSE
 !/requirements.txt
 !/requirements-optional.txt
+!/requirements-karaoke.txt
 !/config.example.json
 !/scripts/
 /scripts/**
@@ -57,4 +58,5 @@ __pycache__/
 .pipeline-reports/
 .pipeline-provenance/
 .timeline-history/
+.karaoke/
 sample-run-*/

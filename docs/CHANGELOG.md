@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Add a project-based karaoke CLI with strict cue/syllable validation, reusable
+local forced alignment for supplied Chinese lyrics, premium panel/English/pinyin
+ASS and SRT export, source-bound build identities, preview/master QA, and
+picture-preserving audio-only exports. Add optional local instrumental-primary
+UVR MDX separation with explicit execution providers and no runtime downloads.
+Generate role-based original creator/music/reupload credits and use “Vocals
+reduced for karaoke” in instrumental descriptions. Add synthetic fixtures,
+media regressions, a project schema and production/setup guidance.
+
 Replace competing cut/storyboard views with one canonical timeline per workspace.
 Workspace v2 derives scene text, duration, navigation and the full script from
 timeline clips. Add scene script/trim/reorder editing with revision conflicts and

@@ -4,6 +4,28 @@ Run `python scripts/pipeline.py --help` for the complete command list. Global `-
 
 Exit 0 means the requested operation completed successfully; exit 1 indicates validation, environment, media, or terminal-job failure; exit 130 indicates interruption. A dry validation success is not a render, transcript, or provider-success claim. The legacy `render_timeline.py` wrapper prints its render/validation result directly for compatibility.
 
+## Karaoke production
+
+The separate `scripts/karaoke.py` entry point uses the same JSON `ok/result/error`
+envelope and exit codes, media runner and output transactions as the main CLI:
+
+```text
+karaoke.py init SOURCE PROJECT --title TITLE
+karaoke.py align PROJECT [--model small] [--device cpu|cuda] [--allow-download]
+karaoke.py build PROJECT
+karaoke.py preview PROJECT OUTPUT --start SECONDS --duration SECONDS [--encoder libx264|h264_nvenc]
+karaoke.py render PROJECT OUTPUT [--encoder libx264|h264_nvenc]
+karaoke.py separate SOURCE OUTPUT.wav --model LOCAL_ONNX --model-data LOCAL_JSON [--provider cpu|directml|cuda]
+karaoke.py remux APPROVED_VIDEO REPLACEMENT_AUDIO OUTPUT
+```
+
+Project paths resolve relative to the project JSON; sources remain unmodified.
+Build results point to private `.karaoke/IDENTITY/` ASS/SRT and description files.
+Rendering needs FFmpeg/libass, with no transcription/separation dependencies.
+Alignment and separation import optional packages only in those stages. No
+command uploads or publishes videos. See [KARAOKE.md](KARAOKE.md) for the project
+contract, optional setup, review requirements and publishing handoff.
+
 ## Browser workspace
 
 ```text
